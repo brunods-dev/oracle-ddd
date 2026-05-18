@@ -1,0 +1,553 @@
+/* Copa World Cup 2026 Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+html {
+  /* Primary palette - based on USA/CAN/MEX host nations */
+  --lumo-primary-color:              #006847;
+  --lumo-primary-color-50pct:        rgba(0, 104, 71, 0.5);
+  --lumo-primary-color-10pct:        rgba(0, 104, 71, 0.1);
+  --lumo-primary-text-color:         #006847;
+  --lumo-primary-contrast-color:     #ffffff;
+
+  /* Secondary palette */
+  --lumo-secondary-color:            #C8102E;
+  --lumo-secondary-color-50pct:      rgba(200, 16, 46, 0.5);
+
+  /* Copa custom variables */
+  --copa-blue:                       #002868;
+  --copa-gold:                       #FFD100;
+  --copa-green:                      #006847;
+  --copa-red:                        #C8102E;
+  --copa-gradient:                   linear-gradient(135deg, #006847 0%, #002868 50%, #C8102E 100%);
+  --copa-card-bg:                    #ffffff;
+  --copa-surface:                    #f8fafc;
+
+  /* Typography */
+  --lumo-font-family:                "Inter", system-ui, -apple-system, sans-serif;
+  --lumo-font-size-xxs:              0.625rem;
+  --lumo-font-size-xs:               0.75rem;
+  --lumo-font-size-s:                0.875rem;
+  --lumo-font-size-m:                1rem;
+  --lumo-font-size-l:                1.125rem;
+  --lumo-font-size-xl:               1.375rem;
+  --lumo-font-size-2xl:              1.75rem;
+  --lumo-font-size-3xl:              2.25rem;
+
+  /* Border radius */
+  --lumo-border-radius-s:            8px;
+  --lumo-border-radius-m:            14px;
+  --lumo-border-radius-l:            20px;
+
+  /* Shadows */
+  --lumo-box-shadow-xs:              0 1px 4px rgba(0, 40, 104, 0.08);
+  --lumo-box-shadow-s:               0 2px 8px rgba(0, 40, 104, 0.10);
+  --lumo-box-shadow-m:               0 4px 20px rgba(0, 40, 104, 0.12);
+  --lumo-box-shadow-l:               0 8px 32px rgba(0, 40, 104, 0.16);
+
+  /* Background */
+  --lumo-base-color:                 #ffffff;
+  --lumo-tint-5pct:                  rgba(248, 250, 252, 0.05);
+  --lumo-tint-10pct:                 rgba(248, 250, 252, 0.10);
+
+  /* State colors */
+  --lumo-success-color:              #16a34a;
+  --lumo-success-color-50pct:        rgba(22, 163, 74, 0.5);
+  --lumo-success-text-color:         #15803d;
+  --lumo-error-color:                #dc2626;
+  --lumo-error-color-50pct:          rgba(220, 38, 38, 0.5);
+  --lumo-warning-color:              #d97706;
+  --lumo-warning-color-10pct:        rgba(217, 119, 6, 0.1);
+}
+
+/* Body */
+body {
+  background-color: var(--copa-surface);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* App layout header */
+vaadin-app-layout::part(navbar) {
+  background: var(--copa-gradient);
+  box-shadow: var(--lumo-box-shadow-m);
+  min-height: 3.5rem;
+  padding: 0 var(--lumo-space-m);
+}
+
+.app-header {
+  gap: var(--lumo-space-m);
+}
+
+.app-header-left {
+  gap: var(--lumo-space-xs);
+  min-width: 0;
+}
+
+.app-header-toggle {
+  color: #fff;
+  margin-right: var(--lumo-space-xs);
+  --lumo-contrast-5pct: rgba(255, 255, 255, 0.12);
+  --lumo-contrast-10pct: rgba(255, 255, 255, 0.18);
+}
+
+.app-header-toggle:hover {
+  color: #fff;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--lumo-space-s);
+  min-width: 0;
+}
+
+.app-header-logo {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.3rem;
+  box-sizing: border-box;
+  color: var(--copa-gold);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+}
+
+.app-header-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.app-header-title {
+  color: #fff;
+  font-size: var(--lumo-font-size-l);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.app-header-subtitle {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--lumo-font-size-xxs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.app-header-badge {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 209, 0, 0.55);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: var(--lumo-font-size-xxs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+@media (max-width: 640px) {
+  .app-header-subtitle {
+    display: none;
+  }
+
+  .app-header-badge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6rem;
+  }
+}
+
+vaadin-app-layout::part(drawer) {
+  background: var(--lumo-base-color);
+  border-right: 1px solid var(--lumo-contrast-10pct);
+  box-shadow: var(--lumo-box-shadow-s);
+}
+
+/* Grid */
+vaadin-grid {
+  border-radius: var(--lumo-border-radius-m);
+  box-shadow: var(--lumo-box-shadow-s);
+  border: 1px solid var(--lumo-contrast-10pct);
+}
+
+vaadin-grid::part(header-cell) {
+  background: linear-gradient(135deg, #f8fafc, #f0f4f8);
+  font-weight: 700;
+  font-size: var(--lumo-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--copa-blue);
+  border-bottom: 2px solid var(--copa-green);
+}
+
+vaadin-grid::part(row):hover {
+  background: var(--lumo-primary-color-10pct);
+}
+
+/* Buttons */
+vaadin-button[theme~="primary"] {
+  background: var(--copa-gradient);
+  border-radius: var(--lumo-border-radius-m);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 104, 71, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+vaadin-button[theme~="primary"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 104, 71, 0.4);
+}
+
+vaadin-button[theme~="error"] {
+  background: var(--copa-red);
+  border-radius: var(--lumo-border-radius-m);
+}
+
+/* Text fields */
+vaadin-text-field::part(input-field),
+vaadin-combo-box::part(input-field),
+vaadin-date-picker::part(input-field) {
+  border-radius: var(--lumo-border-radius-m);
+  border: 1.5px solid var(--lumo-contrast-20pct);
+  transition: border-color 0.15s ease;
+}
+
+vaadin-text-field::part(input-field):focus-within,
+vaadin-combo-box::part(input-field):focus-within {
+  border-color: var(--copa-green);
+  box-shadow: 0 0 0 3px var(--lumo-primary-color-10pct);
+}
+
+/* Cards */
+.copa-card {
+  background: var(--copa-card-bg);
+  border-radius: var(--lumo-border-radius-l);
+  box-shadow: var(--lumo-box-shadow-m);
+  padding: var(--lumo-space-l);
+  border: 1px solid var(--lumo-contrast-10pct);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.copa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lumo-box-shadow-l);
+}
+
+/* Match card */
+.match-card {
+  background: var(--copa-card-bg);
+  border-radius: var(--lumo-border-radius-l);
+  box-shadow: var(--lumo-box-shadow-s);
+  padding: var(--lumo-space-m);
+  border: 1px solid var(--lumo-contrast-10pct);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.match-card:hover {
+  border-color: var(--copa-green);
+  box-shadow: var(--lumo-box-shadow-m);
+  transform: translateY(-2px);
+}
+
+.match-flag {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.match-vs {
+  font-weight: 800;
+  color: var(--copa-blue);
+  font-size: var(--lumo-font-size-l);
+}
+
+.match-team-name {
+  font-weight: 600;
+  font-size: var(--lumo-font-size-s);
+  color: var(--lumo-body-text-color);
+}
+
+.match-venue {
+  font-size: var(--lumo-font-size-xs);
+  color: var(--lumo-secondary-text-color);
+}
+
+.match-date {
+  font-size: var(--lumo-font-size-xs);
+  color: var(--lumo-secondary-text-color);
+  font-weight: 500;
+}
+
+.match-badge {
+  display: inline-block;
+  background: var(--lumo-primary-color-10pct);
+  color: var(--lumo-primary-text-color);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: var(--lumo-font-size-xxs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-badge.live {
+  background: var(--copa-red);
+  color: #fff;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* KPI cards */
+.kpi-card {
+  background: var(--copa-card-bg);
+  border-radius: var(--lumo-border-radius-l);
+  padding: var(--lumo-space-l);
+  box-shadow: var(--lumo-box-shadow-m);
+  border-left: 4px solid var(--copa-green);
+  min-width: 160px;
+}
+
+.kpi-card.revenue { border-left-color: var(--copa-gold); }
+.kpi-card.tickets { border-left-color: var(--copa-blue); }
+.kpi-card.reservations { border-left-color: var(--copa-red); }
+.kpi-card.conversion { border-left-color: #7c3aed; }
+
+.kpi-value {
+  font-size: var(--lumo-font-size-2xl);
+  font-weight: 800;
+  color: var(--lumo-body-text-color);
+  line-height: 1;
+}
+
+.kpi-label {
+  font-size: var(--lumo-font-size-xs);
+  color: var(--lumo-secondary-text-color);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--lumo-space-xs);
+}
+
+/* Seat map */
+.seat-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.seat-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: clamp(18px, 2.8vw, 28px);
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: clamp(6px, 1vw, 10px);
+  font-weight: 600;
+  transition: all 0.1s ease;
+  position: relative;
+  padding: 0;
+}
+
+.seat-btn.available { background: var(--copa-green); color: #fff; }
+.seat-btn.reserved  { background: var(--copa-gold);  color: #333; }
+.seat-btn.sold      { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+.seat-btn.selected  { background: var(--copa-blue);  color: #fff; box-shadow: 0 0 0 3px rgba(0,40,104,0.3); }
+.seat-btn.optimal::after {
+  content: '★';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  font-size: 6px;
+  color: var(--copa-gold);
+}
+
+/* Ticket card */
+.ticket-card {
+  background: linear-gradient(135deg, #002868 0%, #006847 100%);
+  color: #fff;
+  border-radius: var(--lumo-border-radius-l);
+  padding: var(--lumo-space-l);
+  box-shadow: var(--lumo-box-shadow-l);
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-card::before {
+  content: '⚽';
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  font-size: 80px;
+  opacity: 0.1;
+}
+
+.ticket-code {
+  font-family: monospace;
+  font-size: var(--lumo-font-size-s);
+  background: rgba(255,255,255,0.15);
+  padding: 4px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: var(--lumo-font-size-xxs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-paid       { background: #dcfce7; color: #15803d; }
+.status-pending    { background: #fef9c3; color: #a16207; }
+.status-cancelled  { background: #fee2e2; color: #dc2626; }
+.status-issued     { background: #dbeafe; color: #1d4ed8; }
+.status-available  { background: #dcfce7; color: #15803d; }
+.status-sold-out   { background: #fee2e2; color: #dc2626; }
+
+/* Occupancy bar */
+.occupancy-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.occupancy-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--copa-green), var(--copa-gold));
+  transition: width 0.4s ease;
+}
+
+/* Page title */
+.page-title {
+  font-size: var(--lumo-font-size-2xl);
+  font-weight: 800;
+  color: var(--copa-blue);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: var(--lumo-font-size-s);
+  color: var(--lumo-secondary-text-color);
+  margin: 0;
+}
+
+/* Pix QR area */
+.pix-container {
+  background: linear-gradient(135deg, #f0fdf4, #dbeafe);
+  border: 2px dashed var(--copa-green);
+  border-radius: var(--lumo-border-radius-l);
+  padding: var(--lumo-space-xl);
+  text-align: center;
+}
+
+.pix-code {
+  font-family: monospace;
+  font-size: var(--lumo-font-size-xs);
+  word-break: break-all;
+  background: #fff;
+  padding: var(--lumo-space-s);
+  border-radius: var(--lumo-border-radius-s);
+  border: 1px solid var(--lumo-contrast-20pct);
+}
+
+/* Stadium map */
+.stadium-map-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+}
+
+/* stadium field image wrappers now use <img> via Java — kept as layout helpers */
+.stadium-field-img {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 40, 104, 0.18);
+  border: 3px solid #fff;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  min-width: 200px;
+  max-width: 480px;
+}
+
+.stadium-field-img-mini {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 40, 104, 0.15);
+  border: 2px solid #fff;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  min-width: 120px;
+}
+
+.sector-tab {
+  background: var(--copa-card-bg);
+  border: 2px solid var(--copa-green);
+  border-radius: var(--lumo-border-radius-s);
+  padding: var(--lumo-space-s) var(--lumo-space-m);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-width: 115px;
+  color: var(--lumo-body-text-color);
+  user-select: none;
+  box-shadow: var(--lumo-box-shadow-xs);
+}
+
+.sector-tab:hover {
+  background: var(--copa-green);
+  transform: scale(1.05);
+  box-shadow: var(--lumo-box-shadow-m);
+}
+
+.sector-tab:hover span {
+  color: #fff !important;
+}
+
+.sector-tab-north { border-bottom: 4px solid var(--copa-green); }
+.sector-tab-south { border-top:    4px solid var(--copa-green); }
+.sector-tab-east  { border-left:   4px solid var(--copa-green); }
+.sector-tab-west  { border-right:  4px solid var(--copa-green); }
+
+.sector-tab-soldout {
+  border-color: var(--lumo-contrast-20pct);
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .stadium-map-grid {
+    gap: 8px;
+  }
+
+  .sector-tab {
+    min-width: 80px;
+    padding: 6px 8px;
+  }
+
+  .stadium-field-img {
+    min-width: 140px;
+  }
+}

@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+  features:
+    access-log:
+      enabled: true
+
+db:
+  url: "jdbc:mysql://localhost:3306/copa_ticketing?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
+  username: "copa_user"
+  password: "changeme"
+  pool-size: 20
+
+security:
+  admin-user: "admin"
+  admin-pass: "changeme"
+  customer-user: "customer"
+  customer-pass: "changeme"
+
+pagination:
+  default-size: 20
+  max-size: 100
+
+reservation:
+  expiry-minutes: 10

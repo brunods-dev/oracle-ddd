@@ -1,0 +1,47 @@
+# Secrets 
+**/.env
+!**/.env.example
+
+# Maven / Java build
+target/
+*.class
+*.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# Vaadin / Node (frontend)
+node_modules/
+frontend/node_modules/
+.npm/
+.vaadin/
+frontend/.vaadin/
+frontend/generated/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+bin/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local editor scratch
+*~
+*.swp
+*.swo

@@ -1,0 +1,1 @@
+Erro ao carregar mapa: Backend GET http://localhost:8080/api/public/matches/7/seat-map?sector=VIP&page=0&size=100 failed: Backend error 500: {"error":"Database error: Unknown column 'status' in 'field list'"}

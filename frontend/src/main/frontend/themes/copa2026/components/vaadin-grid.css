@@ -1,0 +1,15 @@
+:host {
+  --lumo-border-radius-m: 14px;
+}
+
+[part~="header-cell"] {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  color: var(--copa-blue, #002868);
+}
+
+[part~="row"][selected] {
+  background: var(--lumo-primary-color-10pct);
+}
