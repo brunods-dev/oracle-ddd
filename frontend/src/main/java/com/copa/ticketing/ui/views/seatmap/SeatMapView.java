@@ -3,6 +3,7 @@ package com.copa.ticketing.ui.views.seatmap;
 import com.copa.ticketing.ui.client.BackendClient;
 import com.copa.ticketing.ui.client.dto.MatchDto;
 import com.copa.ticketing.ui.client.dto.SeatDto;
+import com.copa.ticketing.ui.client.dto.SeatRowSummaryDto;
 import com.copa.ticketing.ui.layout.MainLayout;
 import com.copa.ticketing.ui.views.checkout.CheckoutView;
 import com.vaadin.flow.component.UI;
@@ -14,6 +15,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -26,14 +28,22 @@ import java.util.*;
 public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
 
     private final BackendClient client;
+
+    // State
     private final Set<Long> selectedSeats = new LinkedHashSet<>();
-    private final Map<Long, SeatDto> seatDtoMap = new HashMap<>();
+    private final Map<Long, SeatDto> selectedSeatDetails = new HashMap<>();
     private MatchDto match;
     private String sectorCode;
+    private long matchId;
     private long matchSectorId;
     private double unitPrice;
+    private List<SeatRowSummaryDto> rows = new ArrayList<>();
+    private String activeRow;
 
-    private Div seatGrid;
+    // UI references updated at runtime
+    private Div rowPicker;
+    private Div seatArea;
+    private ProgressBar loadingBar;
     private Span selectedCount;
     private Span totalPrice;
     private Button proceedBtn;
@@ -52,29 +62,35 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
     public void beforeEnter(BeforeEnterEvent event) {
         String idStr = event.getRouteParameters().get("id").orElse("0");
         sectorCode = event.getRouteParameters().get("sector").orElse("");
-        seatDtoMap.clear();
         selectedSeats.clear();
+        selectedSeatDetails.clear();
+        matchSectorId = 0;
+        unitPrice = 0;
+        activeRow = null;
+
         try {
-            long matchId = Long.parseLong(idStr);
+            matchId = Long.parseLong(idStr);
             match = client.getMatch(matchId);
-            loadSeats(matchId, sectorCode);
-            if (seatDtoMap.isEmpty()) {
-                Notification.show("Nenhum assento encontrado para este setor.", 4000, Notification.Position.TOP_CENTER)
-                            .addThemeVariants(NotificationVariant.LUMO_WARNING);
-            }
-            buildUI();
+            rows = client.getSeatMapRows(matchId, sectorCode);
         } catch (Exception e) {
             Notification.show("Erro ao carregar mapa: " + e.getMessage(), 3000, Notification.Position.TOP_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
         }
-    }
 
-    private void loadSeats(long matchId, String sector) {
-        for (SeatDto s : client.getAllSeatMap(matchId, sector)) {
-            if (s.venueSeatId() <= 0) continue;
-            seatDtoMap.put(s.venueSeatId(), s);
-            if (matchSectorId == 0) matchSectorId = s.matchSectorId();
-            unitPrice = s.price();
+        buildUI();
+
+        // Auto-select first row with available seats, or just the first row
+        if (!rows.isEmpty()) {
+            String first = rows.stream()
+                .filter(r -> r.availableCount() > 0)
+                .map(SeatRowSummaryDto::rowLabel)
+                .findFirst()
+                .orElse(rows.get(0).rowLabel());
+            selectRow(first);
+        } else {
+            Notification.show("Nenhum assento encontrado para este setor.", 4000, Notification.Position.TOP_CENTER)
+                        .addThemeVariants(NotificationVariant.LUMO_WARNING);
         }
     }
 
@@ -88,12 +104,18 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         H2 title = new H2("🪑 Mapa de Assentos – " + sectorCode);
         title.addClassName("page-title");
 
-        Span matchInfo = new Span((match.homeTeam() != null ? match.homeTeam() : "TBD")
-                + " vs " + (match.awayTeam() != null ? match.awayTeam() : "TBD")
-                + " | " + match.venueName());
+        Span matchInfo = new Span(
+            (match.homeTeam() != null ? match.homeTeam() : "TBD")
+            + " vs " + (match.awayTeam() != null ? match.awayTeam() : "TBD")
+            + " | " + match.venueName());
         matchInfo.addClassName("page-subtitle");
 
-        add(back, title, matchInfo, buildSectorOrientation(), buildLegend(), buildSeatGrid(), buildBottomBar());
+        add(back, title, matchInfo,
+            buildSectorOrientation(),
+            buildLegend(),
+            buildSeatAreaContainer(),
+            buildRowPicker(),
+            buildBottomBar());
     }
 
     // ─── Sector Orientation Mini-Map ───────────────────────────────────────────
@@ -126,11 +148,9 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         grid.add(new Div());
         grid.add(buildOrientationBadge("NORTH", isNorth));
         grid.add(new Div());
-
         grid.add(buildOrientationBadge("VIP", isWestOrVip));
         grid.add(buildMiniFieldImage());
         grid.add(buildOrientationBadge("EAST", isEast));
-
         grid.add(new Div());
         grid.add(buildOrientationBadge("SOUTH", isSouth));
         grid.add(new Div());
@@ -197,7 +217,9 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
 
     private HorizontalLayout buildLegend() {
         HorizontalLayout legend = new HorizontalLayout();
-        legend.getStyle().set("gap", "var(--lumo-space-m)").set("flex-wrap", "wrap")
+        legend.getStyle()
+              .set("gap", "var(--lumo-space-m)")
+              .set("flex-wrap", "wrap")
               .set("margin", "var(--lumo-space-s) 0");
 
         legend.add(legendItem("Disponível", "var(--copa-green)"));
@@ -209,7 +231,8 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div legendItem(String label, String color) {
         Div dot = new Div();
-        dot.getStyle().set("width", "20px").set("height", "20px")
+        dot.getStyle()
+           .set("width", "20px").set("height", "20px")
            .set("border-radius", "4px").set("background", color)
            .set("flex-shrink", "0");
         Span text = new Span(label);
@@ -219,116 +242,245 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         return item;
     }
 
-    // ─── Seat Grid ─────────────────────────────────────────────────────────────
+    // ─── Row Picker ────────────────────────────────────────────────────────────
 
-    private Div buildSeatGrid() {
-        seatGrid = new Div();
-        seatGrid.getStyle()
-                .set("background", "var(--lumo-base-color)")
-                .set("border-radius", "var(--lumo-border-radius-l)")
-                .set("padding", "var(--lumo-space-l)")
-                .set("box-shadow", "var(--lumo-box-shadow-m)")
-                .set("width", "100%")
-                .set("min-width", "0")
-                .set("box-sizing", "border-box")
-                .set("max-height", "480px")
-                .set("overflow-y", "auto")
-                .set("overflow-x", "auto")
-                .set("margin-bottom", "var(--lumo-space-m)");
+    private Div buildRowPicker() {
+        Div wrapper = new Div();
+        wrapper.getStyle()
+            .set("background", "var(--copa-card-bg)")
+            .set("border-radius", "var(--lumo-border-radius-l)")
+            .set("padding", "var(--lumo-space-m)")
+            .set("margin-bottom", "var(--lumo-space-m)")
+            .set("box-shadow", "var(--lumo-box-shadow-s)")
+            .set("border", "1px solid var(--lumo-contrast-10pct)")
+            .set("width", "100%")
+            .set("box-sizing", "border-box");
 
-        seatGrid.add(buildFieldBanner());
+        Span heading = new Span("Selecione a fileira:");
+        heading.getStyle()
+            .set("font-size", "var(--lumo-font-size-xs)")
+            .set("font-weight", "700")
+            .set("color", "var(--lumo-secondary-text-color)")
+            .set("display", "block")
+            .set("margin-bottom", "var(--lumo-space-s)")
+            .set("letter-spacing", "0.5px");
 
-        Map<String, List<SeatDto>> byRow = new TreeMap<>();
-        for (SeatDto seat : seatDtoMap.values()) {
-            byRow.computeIfAbsent(seat.rowLabel(), k -> new ArrayList<>()).add(seat);
-        }
+        rowPicker = new Div();
+        rowPicker.addClassName("seat-row-picker");
 
-        for (Map.Entry<String, List<SeatDto>> entry : byRow.entrySet()) {
-            Div row = new Div();
-            row.getStyle()
-               .set("display", "flex")
-               .set("align-items", "center")
-               .set("gap", "2px")
-               .set("margin-bottom", "2px")
-               .set("width", "100%");
+        refreshRowPicker();
 
-            Span rowLabel = new Span(entry.getKey());
-            rowLabel.getStyle()
-                    .set("width", "24px")
-                    .set("min-width", "24px")
-                    .set("flex-shrink", "0")
-                    .set("font-size", "10px")
-                    .set("font-weight", "600")
-                    .set("color", "var(--lumo-secondary-text-color)")
-                    .set("text-align", "center");
-            row.add(rowLabel);
-
-            List<SeatDto> seats = entry.getValue();
-            seats.sort(Comparator.comparingInt(SeatDto::seatNumber));
-
-            for (SeatDto seat : seats) {
-                row.add(buildSeatButton(seat));
-            }
-            seatGrid.add(row);
-        }
-        return seatGrid;
+        wrapper.add(heading, rowPicker);
+        return wrapper;
     }
 
-    private Div buildFieldBanner() {
-        Image img = new Image("/images/stadium.jpg", "Campo");
-        img.getStyle()
-            .set("position", "absolute")
-            .set("inset", "0")
-            .set("width", "100%")
-            .set("height", "100%")
-            .set("object-fit", "cover");
+    private void refreshRowPicker() {
+        rowPicker.removeAll();
+        int total = rows.size();
+        for (int i = 0; i < total; i++) {
+            rowPicker.add(buildRowChip(rows.get(i), i, total));
+        }
+    }
 
-        Div overlay = new Div();
-        overlay.getStyle()
-            .set("position", "absolute")
-            .set("inset", "0")
+    private Div buildRowChip(SeatRowSummaryDto row, int index, int total) {
+        boolean isActive   = row.rowLabel().equals(activeRow);
+        boolean hasAvail   = row.availableCount() > 0;
+        // first 20% of rows are closest to the field
+        boolean nearField  = total > 0 && index < Math.max(1, (int) Math.ceil(total * 0.20));
+
+        Span label = new Span(row.rowLabel());
+        label.getStyle().set("font-weight", "700").set("font-size", "var(--lumo-font-size-s)");
+
+        Span badge = new Span(row.availableCount() + " livre" + (row.availableCount() == 1 ? "" : "s"));
+        badge.addClassName("row-chip-badge");
+        if (!hasAvail) badge.getStyle().set("opacity", "0.5");
+
+        Div chip = new Div(label, badge);
+        chip.addClassName("seat-row-chip");
+        if (isActive)  chip.addClassName("active");
+        if (!hasAvail) chip.addClassName("full");
+        if (nearField) chip.addClassName("near-field");
+        if (nearField) chip.getElement().setAttribute("title", "Próximo ao campo ⚽");
+
+        chip.addClickListener(e -> selectRow(row.rowLabel()));
+        return chip;
+    }
+
+    // ─── Seat Area ─────────────────────────────────────────────────────────────
+
+    private Div buildSeatAreaContainer() {
+        Div container = new Div();
+        container.getStyle()
+            .set("background", "var(--lumo-base-color)")
+            .set("border-radius", "var(--lumo-border-radius-l)")
+            .set("padding", "var(--lumo-space-l)")
+            .set("box-shadow", "var(--lumo-box-shadow-m)")
+            .set("width", "100%")
+            .set("box-sizing", "border-box")
+            .set("margin-bottom", "var(--lumo-space-m)");
+
+        loadingBar = new ProgressBar();
+        loadingBar.setIndeterminate(true);
+        loadingBar.setVisible(false);
+        loadingBar.getStyle()
+            .set("width", "100%")
+            .set("margin-bottom", "var(--lumo-space-s)");
+
+        seatArea = new Div();
+        seatArea.getStyle()
+            .set("overflow-x", "auto")
+            .set("max-height", "420px")
+            .set("overflow-y", "auto");
+
+        container.add(buildFieldDirectionBanner(), loadingBar, seatArea);
+        return container;
+    }
+
+    private Div buildFieldDirectionBanner() {
+        Span arrow = new Span("↑");
+        arrow.getStyle()
+            .set("font-size", "1.1em")
+            .set("font-weight", "900")
+            .set("color", "var(--copa-green)");
+
+        Span text = new Span("CAMPO / FIELD — fileiras mais próximas ao topo");
+        text.getStyle()
+            .set("font-size", "var(--lumo-font-size-xs)")
+            .set("font-weight", "700")
+            .set("color", "var(--copa-green)")
+            .set("letter-spacing", "0.5px");
+
+        Div banner = new Div(arrow, text);
+        banner.getStyle()
             .set("display", "flex")
             .set("align-items", "center")
-            .set("justify-content", "center")
-            .set("background", "rgba(0,104,71,0.60)");
-
-        Span label = new Span("⚽  CAMPO / FIELD");
-        label.getStyle()
-            .set("color", "#fff")
-            .set("font-weight", "800")
-            .set("font-size", "var(--lumo-font-size-s)")
-            .set("letter-spacing", "3px")
-            .set("text-shadow", "0 1px 4px rgba(0,0,0,0.4)");
-
-        overlay.add(label);
-
-        Div banner = new Div( overlay);
-        banner.getStyle()
-            .set("border-radius", "10px")
-            .set("height", "72px")
-            .set("position", "relative")
-            .set("overflow", "hidden")
+            .set("gap", "8px")
+            .set("background", "linear-gradient(90deg, rgba(0,104,71,0.10) 0%, transparent 100%)")
+            .set("border-left", "3px solid var(--copa-green)")
+            .set("border-radius", "0 6px 6px 0")
+            .set("padding", "6px 14px")
             .set("margin-bottom", "var(--lumo-space-m)");
         return banner;
     }
 
-    private Button buildSeatButton(SeatDto seat) {
-        Button btn = new Button(String.valueOf(seat.seatNumber()));
-        btn.addClassName("seat-btn");
-        btn.addClassName(seatClass(seat.status()));
-        if (seat.isOptimal()) btn.addClassName("optimal");
-        btn.getElement().setProperty("title", seat.seatLabel() + " – " + seat.entrance());
+    private void selectRow(String row) {
+        activeRow = row;
+        refreshRowPicker();
+        seatArea.removeAll();
+        loadingBar.setVisible(true);
 
-        boolean canSelect = "AVAILABLE".equalsIgnoreCase(seat.status());
-        btn.setEnabled(canSelect);
-
-        if (canSelect) {
-            btn.addClickListener(e -> toggleSeat(seat, btn));
+        try {
+            List<SeatDto> seats = client.getSeatMapByRow(matchId, sectorCode, row);
+            renderSeats(seats);
+        } catch (Exception ex) {
+            Notification.show("Erro ao carregar fileira: " + ex.getMessage(),
+                3000, Notification.Position.TOP_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        } finally {
+            loadingBar.setVisible(false);
         }
-        return btn;
     }
 
-    private void toggleSeat(SeatDto seat, Button btn) {
+    private void renderSeats(List<SeatDto> seats) {
+        seatArea.removeAll();
+
+        if (seats.isEmpty()) {
+            Span empty = new Span("Nenhum assento nesta fileira.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)")
+                 .set("font-size", "var(--lumo-font-size-s)");
+            seatArea.add(empty);
+            return;
+        }
+
+        // Capture matchSectorId / unitPrice from first seat
+        SeatDto first = seats.get(0);
+        if (matchSectorId == 0) matchSectorId = first.matchSectorId();
+        if (unitPrice == 0) unitPrice = first.price();
+
+        // Compute proximity label for this row
+        int rowIndex = -1;
+        for (int i = 0; i < rows.size(); i++) {
+            if (rows.get(i).rowLabel().equals(activeRow)) { rowIndex = i; break; }
+        }
+        int total = rows.size();
+        String proximityLabel = "";
+        if (total > 1 && rowIndex >= 0) {
+            double pct = (double) rowIndex / (total - 1);
+            if (pct < 0.20)      proximityLabel = "⚽ Próximo ao campo";
+            else if (pct > 0.80) proximityLabel = "🔝 Setor superior";
+        }
+
+        Div rowHeader = new Div();
+        rowHeader.getStyle()
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "var(--lumo-space-s)")
+            .set("font-size", "var(--lumo-font-size-xs)")
+            .set("font-weight", "600")
+            .set("margin-bottom", "var(--lumo-space-s)")
+            .set("letter-spacing", "0.5px");
+
+        Span rowTitle = new Span("Fileira " + activeRow + " — " + seats.size() + " assentos");
+        rowTitle.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        rowHeader.add(rowTitle);
+
+        if (!proximityLabel.isEmpty()) {
+            Span prox = new Span(proximityLabel);
+            prox.getStyle()
+                .set("font-size", "var(--lumo-font-size-xxs)")
+                .set("background", "rgba(0,104,71,0.10)")
+                .set("color", "var(--copa-green)")
+                .set("border-radius", "999px")
+                .set("padding", "2px 8px")
+                .set("font-weight", "700")
+                .set("white-space", "nowrap");
+            rowHeader.add(prox);
+        }
+
+        Div seatsRow = new Div();
+        seatsRow.addClassName("seat-row-flex");
+
+        Span rowLabelSpan = new Span(activeRow);
+        rowLabelSpan.getStyle()
+            .set("width", "24px")
+            .set("min-width", "24px")
+            .set("flex-shrink", "0")
+            .set("font-size", "10px")
+            .set("font-weight", "600")
+            .set("color", "var(--lumo-secondary-text-color)")
+            .set("text-align", "center")
+            .set("align-self", "center");
+        seatsRow.add(rowLabelSpan);
+
+        for (SeatDto seat : seats) {
+            seatsRow.add(buildSeatCell(seat));
+        }
+
+        seatArea.add(rowHeader, seatsRow);
+    }
+
+    private Div buildSeatCell(SeatDto seat) {
+        String status = seat.status() == null ? "available" : seat.status().toUpperCase();
+        boolean canSelect = "AVAILABLE".equals(status);
+        boolean isSelected = selectedSeats.contains(seat.venueSeatId());
+
+        Div cell = new Div();
+        cell.addClassName("seat-btn");
+        cell.addClassName(isSelected ? "selected" : seatCssClass(status));
+        if (seat.isOptimal()) cell.addClassName("optimal");
+        cell.setText(String.valueOf(seat.seatNumber()));
+        cell.getElement().setAttribute("title", seat.seatLabel() + " – " + seat.entrance());
+
+        if (!canSelect) {
+            cell.getStyle().set("cursor", "not-allowed");
+        } else {
+            cell.addClickListener(e -> toggleSeat(seat, cell));
+        }
+
+        return cell;
+    }
+
+    private void toggleSeat(SeatDto seat, Div cell) {
         long id = seat.venueSeatId();
         if (id <= 0) {
             Notification.show("Assento inválido no mapa. Recarregue a página.", 3000, Notification.Position.TOP_CENTER)
@@ -337,16 +489,18 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         }
         if (selectedSeats.contains(id)) {
             selectedSeats.remove(id);
-            btn.removeClassName("selected");
-            btn.addClassName("available");
+            selectedSeatDetails.remove(id);
+            cell.removeClassName("selected");
+            cell.addClassName("available");
         } else {
             if (selectedSeats.size() >= 8) {
                 Notification.show("Máximo de 8 assentos por pedido", 2000, Notification.Position.TOP_CENTER);
                 return;
             }
             selectedSeats.add(id);
-            btn.removeClassName("available");
-            btn.addClassName("selected");
+            selectedSeatDetails.put(id, seat);
+            cell.removeClassName("available");
+            cell.addClassName("selected");
         }
         updateBottomBar();
     }
@@ -375,7 +529,9 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         selectedCount.getStyle().set("font-weight", "600");
 
         totalPrice = new Span("Total: USD 0,00");
-        totalPrice.getStyle().set("font-size", "var(--lumo-font-size-l)").set("font-weight", "800")
+        totalPrice.getStyle()
+                  .set("font-size", "var(--lumo-font-size-l)")
+                  .set("font-weight", "800")
                   .set("color", "var(--copa-green)");
 
         proceedBtn = new Button("Continuar para Checkout", VaadinIcon.ARROW_RIGHT.create());
@@ -412,12 +568,10 @@ public class SeatMapView extends VerticalLayout implements BeforeEnterObserver {
         UI.getCurrent().navigate("checkout", qp);
     }
 
-    private String seatClass(String status) {
-        if (status == null) return "available";
-        return switch (status.toUpperCase()) {
+    private String seatCssClass(String status) {
+        return switch (status) {
             case "AVAILABLE" -> "available";
             case "RESERVED"  -> "reserved";
-            case "SOLD"      -> "sold";
             default          -> "sold";
         };
     }

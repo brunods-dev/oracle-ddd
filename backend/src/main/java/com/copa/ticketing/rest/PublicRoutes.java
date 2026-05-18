@@ -38,6 +38,7 @@ public class PublicRoutes implements HttpService {
             .get("/matches", this::listMatches)
             .get("/matches/{id}", this::getMatch)
             .get("/matches/{id}/sectors", this::listSectors)
+            .get("/matches/{id}/seat-map/rows", this::getSeatMapRows)
             .get("/matches/{id}/seat-map", this::getSeatMap)
             .post("/reservations", this::createReservation)
             .post("/reservations/{code}/checkout", this::checkout)
@@ -84,12 +85,34 @@ public class PublicRoutes implements HttpService {
         }
     }
 
+    private void getSeatMapRows(ServerRequest req, ServerResponse res) {
+        try {
+            long matchId = Long.parseLong(req.path().pathParameters().get("id"));
+            String sector = JsonUtil.queryStr(req, "sector");
+            if (sector == null) {
+                JsonUtil.error(res, 400, "sector query param is required");
+                return;
+            }
+            JsonUtil.ok(res, matchRepo.findSeatMapRows(matchId, sector));
+        } catch (NumberFormatException e) {
+            JsonUtil.error(res, 400, "Invalid match id");
+        } catch (SQLException e) {
+            JsonUtil.error(res, 500, "Database error: " + e.getMessage());
+        }
+    }
+
     private void getSeatMap(ServerRequest req, ServerResponse res) {
         try {
             long matchId = Long.parseLong(req.path().pathParameters().get("id"));
             String sector = JsonUtil.queryStr(req, "sector");
             if (sector == null) {
                 JsonUtil.error(res, 400, "sector query param is required");
+                return;
+            }
+            String rowParam = JsonUtil.queryStr(req, "row");
+            if (rowParam != null && !rowParam.isBlank()) {
+                var items = matchRepo.findSeatMapByRow(matchId, sector, rowParam);
+                JsonUtil.ok(res, new Page<>(items, 0, items.size(), items.size()));
                 return;
             }
             String allParam = JsonUtil.queryStr(req, "all");

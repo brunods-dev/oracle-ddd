@@ -1,8 +1,9 @@
 package com.copa.ticketing.repository;
 
 import com.copa.ticketing.domain.Match;
-import com.copa.ticketing.domain.Sector;
 import com.copa.ticketing.domain.Seat;
+import com.copa.ticketing.domain.SeatRowSummary;
+import com.copa.ticketing.domain.Sector;
 import com.copa.ticketing.pagination.Page;
 
 import javax.sql.DataSource;
@@ -139,6 +140,60 @@ public class MatchRepository {
             }
         }
         return result;
+    }
+
+    public List<SeatRowSummary> findSeatMapRows(long matchId, String sectorCode) throws SQLException {
+        String sql = """
+                SELECT row_label,
+                       COUNT(*) AS total_seats,
+                       SUM(CASE WHEN seat_status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_count,
+                       SUM(CASE WHEN seat_status = 'RESERVED'  THEN 1 ELSE 0 END) AS reserved_count,
+                       SUM(CASE WHEN seat_status NOT IN ('AVAILABLE','RESERVED') THEN 1 ELSE 0 END) AS sold_count
+                FROM vw_seat_map_availability
+                WHERE match_id = ? AND sector_code = ?
+                GROUP BY row_label
+                ORDER BY row_label
+                """;
+        List<SeatRowSummary> result = new ArrayList<>();
+        try (Connection conn = ds.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, matchId);
+            ps.setString(2, sectorCode);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                result.add(new SeatRowSummary(
+                        rs.getString("row_label"),
+                        rs.getLong("total_seats"),
+                        rs.getLong("available_count"),
+                        rs.getLong("reserved_count"),
+                        rs.getLong("sold_count")
+                ));
+            }
+        }
+        return result;
+    }
+
+    public List<Seat> findSeatMapByRow(long matchId, String sectorCode, String rowLabel) throws SQLException {
+        String sql = """
+                SELECT venue_seat_id, match_id, match_sector_id, sector_code, sector_name,
+                       row_label, seat_number, seat_label, block_code, entrance,
+                       price, seat_status AS status
+                FROM vw_seat_map_availability
+                WHERE match_id = ? AND sector_code = ? AND row_label = ?
+                ORDER BY seat_number
+                """;
+        List<Seat> items = new ArrayList<>();
+        try (Connection conn = ds.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, matchId);
+            ps.setString(2, sectorCode);
+            ps.setString(3, rowLabel);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                items.add(mapSeat(rs));
+            }
+        }
+        return items;
     }
 
     public List<Seat> findSeatMapAll(long matchId, String sectorCode) throws SQLException {

@@ -55,6 +55,19 @@ public class BackendClient {
         return get(props.url() + "/api/public/matches/" + matchId + "/sectors", customerAuth, new TypeReference<>() {});
     }
 
+    public List<SeatRowSummaryDto> getSeatMapRows(long matchId, String sectorCode) {
+        String url = props.url() + "/api/public/matches/" + matchId + "/seat-map/rows?sector="
+                + URLEncoder.encode(sectorCode, StandardCharsets.UTF_8);
+        return get(url, customerAuth, new TypeReference<>() {});
+    }
+
+    public List<SeatDto> getSeatMapByRow(long matchId, String sectorCode, String rowLabel) {
+        String url = props.url() + "/api/public/matches/" + matchId + "/seat-map?sector="
+                + URLEncoder.encode(sectorCode, StandardCharsets.UTF_8)
+                + "&row=" + URLEncoder.encode(rowLabel, StandardCharsets.UTF_8);
+        return get(url, customerAuth, new TypeReference<PagedResponse<SeatDto>>() {}).items();
+    }
+
     public List<SeatDto> getAllSeatMap(long matchId, String sectorCode) {
         String url = props.url() + "/api/public/matches/" + matchId + "/seat-map?sector="
                 + URLEncoder.encode(sectorCode, StandardCharsets.UTF_8) + "&all=true";
