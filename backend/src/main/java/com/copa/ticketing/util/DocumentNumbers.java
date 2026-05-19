@@ -1,5 +1,7 @@
 package com.copa.ticketing.util;
 
+import java.util.Locale;
+
 public final class DocumentNumbers {
 
     private DocumentNumbers() {}
@@ -26,6 +28,18 @@ public final class DocumentNumbers {
 
     public static boolean isCpfLookup(String normalized) {
         return normalized.length() == 11 && normalized.chars().allMatch(Character::isDigit);
+    }
+
+    public static boolean isEmailLookup(String raw) {
+        if (raw == null) return false;
+        String trimmed = raw.trim();
+        int at = trimmed.indexOf('@');
+        return at > 0 && at < trimmed.length() - 1;
+    }
+
+    public static String normalizeEmailForLookup(String raw) {
+        if (raw == null) return "";
+        return raw.trim().toLowerCase(Locale.ROOT);
     }
 
     private static boolean looksLikeCpf(String value) {

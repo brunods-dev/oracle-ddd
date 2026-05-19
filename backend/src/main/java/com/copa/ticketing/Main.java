@@ -5,8 +5,11 @@ import com.copa.ticketing.config.DotEnvLoader;
 import com.copa.ticketing.db.DataSourceProvider;
 import com.copa.ticketing.repository.*;
 import com.copa.ticketing.rest.AdminRoutes;
+import com.copa.ticketing.rest.LiveDemoRoutes;
 import com.copa.ticketing.rest.PublicRoutes;
 import com.copa.ticketing.security.BasicAuthConfig;
+import com.copa.ticketing.service.MatchSelloutSimulator;
+import com.copa.ticketing.service.SelloutJobManager;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
 import io.helidon.webserver.WebServer;
@@ -37,6 +40,10 @@ public class Main {
         var reservationRepo = new ReservationRepository(ds);
         var orderRepo = new OrderRepository(ds);
         var dashboardRepo = new DashboardRepository(ds);
+        var hwRepo = new HeatwaveRepository(ds);
+        var selloutRepo = new SelloutRepository(ds);
+        var simulator = new MatchSelloutSimulator(ds);
+        var jobManager = new SelloutJobManager(selloutRepo, simulator);
 
         var security = BasicAuthConfig.build(cfg);
         var secFeature = SecurityFeature.builder()
@@ -45,6 +52,7 @@ public class Main {
 
         var publicRoutes = new PublicRoutes(matchRepo, customerRepo, reservationRepo, orderRepo, cfg);
         var adminRoutes = new AdminRoutes(dashboardRepo, orderRepo, cfg);
+        var liveDemoRoutes = new LiveDemoRoutes(hwRepo, jobManager);
 
         var server = WebServer.builder()
                 .port(cfg.serverPort())
@@ -54,6 +62,7 @@ public class Main {
                         .register("/api/public", publicRoutes)
                         .any("/api/admin/{+}", SecurityFeature.rolesAllowed("ADMIN"))
                         .register("/api/admin", adminRoutes)
+                        .register("/api/admin", liveDemoRoutes)
                         .get("/health", (req, res) -> res.send("{\"status\":\"UP\"}"))
                         .options("/{+}", (req, res) -> {
                             res.header("Access-Control-Allow-Origin", "*");

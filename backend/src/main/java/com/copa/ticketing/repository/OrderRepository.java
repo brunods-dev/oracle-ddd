@@ -256,8 +256,14 @@ public class OrderRepository {
         return findTicketsByOrder(orderId);
     }
 
-    public List<Ticket> findTicketsByCustomerDocument(String documentNumber) throws SQLException {
-        String lookup = DocumentNumbers.normalizeForLookup(documentNumber);
+    public List<Ticket> findTicketsByCustomerDocument(String lookupRaw) throws SQLException {
+        if (lookupRaw == null || lookupRaw.isBlank()) return List.of();
+
+        if (DocumentNumbers.isEmailLookup(lookupRaw)) {
+            return findTicketsByCustomerEmail(DocumentNumbers.normalizeEmailForLookup(lookupRaw));
+        }
+
+        String lookup = DocumentNumbers.normalizeForLookup(lookupRaw);
         if (lookup.isBlank()) return List.of();
 
         String cpfDigitsExpr = "REPLACE(REPLACE(REPLACE(c.document_number, '.', ''), '-', ''), ' ', '')";
@@ -265,7 +271,21 @@ public class OrderRepository {
                 ? "c.document_number = ? OR (c.document_type = 'CPF' AND " + cpfDigitsExpr + " = ?)"
                 : "c.document_number = ?";
 
-        String sql = """
+        String sql = ticketListSql(where);
+
+        if (DocumentNumbers.isCpfLookup(lookup)) {
+            return queryTickets(sql, lookup, lookup);
+        }
+        return queryTickets(sql, lookup);
+    }
+
+    private List<Ticket> findTicketsByCustomerEmail(String email) throws SQLException {
+        if (email.isBlank()) return List.of();
+        return queryTickets(ticketListSql("LOWER(c.email) = ?"), email);
+    }
+
+    private static String ticketListSql(String customerWhere) {
+        return """
                 SELECT t.id, t.ticket_code, t.order_id, t.customer_id,
                        t.match_id, m.match_number,
                        ht.team_name AS home_team, at.team_name AS away_team,
@@ -284,12 +304,7 @@ public class OrderRepository {
                 LEFT JOIN reservation_items ri ON ri.id = t.reservation_item_id
                 WHERE %s
                 ORDER BY m.match_at ASC
-                """.formatted(where);
-
-        if (DocumentNumbers.isCpfLookup(lookup)) {
-            return queryTickets(sql, lookup, lookup);
-        }
-        return queryTickets(sql, lookup);
+                """.formatted(customerWhere);
     }
 
     private List<Ticket> findTicketsByOrder(long orderId) throws SQLException {

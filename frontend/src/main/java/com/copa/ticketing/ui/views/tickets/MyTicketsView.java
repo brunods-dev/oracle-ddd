@@ -43,7 +43,7 @@ public class MyTicketsView extends VerticalLayout {
         H2 title = new H2("🎟 Meus Ingressos");
         title.addClassName("page-title");
 
-        Paragraph sub = new Paragraph("Consulte seus ingressos pelo documento (CPF ou Passaporte)");
+        Paragraph sub = new Paragraph("Consulte seus ingressos pelo e-mail, CPF ou passaporte");
         sub.addClassName("page-subtitle");
 
         VerticalLayout left = new VerticalLayout(title, sub);
@@ -56,17 +56,17 @@ public class MyTicketsView extends VerticalLayout {
     }
 
     private HorizontalLayout buildSearchSection() {
-        TextField docField = new TextField();
-        docField.setPlaceholder("CPF ou Passaporte...");
-        docField.setPrefixComponent(VaadinIcon.SEARCH.create());
-        docField.setWidth("280px");
+        TextField lookupField = new TextField();
+        lookupField.setPlaceholder("E-mail, CPF ou passaporte...");
+        lookupField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        lookupField.setWidth("320px");
 
         Button searchBtn = new Button("Buscar Ingressos", VaadinIcon.TICKET.create());
         searchBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        searchBtn.addClickListener(e -> loadTickets(docField.getValue().trim()));
-        docField.addKeyDownListener(com.vaadin.flow.component.Key.ENTER, e -> loadTickets(docField.getValue().trim()));
+        searchBtn.addClickListener(e -> loadTickets(lookupField.getValue().trim()));
+        lookupField.addKeyDownListener(com.vaadin.flow.component.Key.ENTER, e -> loadTickets(lookupField.getValue().trim()));
 
-        HorizontalLayout row = new HorizontalLayout(docField, searchBtn);
+        HorizontalLayout row = new HorizontalLayout(lookupField, searchBtn);
         row.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.END);
         row.getStyle()
            .set("background", "var(--lumo-base-color)")
@@ -77,17 +77,17 @@ public class MyTicketsView extends VerticalLayout {
         return row;
     }
 
-    private void loadTickets(String doc) {
-        if (doc.isBlank()) {
-            Notification.show("Informe seu CPF ou Passaporte", 2000, Notification.Position.TOP_CENTER)
+    private void loadTickets(String lookup) {
+        if (lookup.isBlank()) {
+            Notification.show("Informe seu e-mail, CPF ou passaporte", 2000, Notification.Position.TOP_CENTER)
                         .addThemeVariants(NotificationVariant.LUMO_WARNING);
             return;
         }
         try {
-            List<TicketDto> tickets = client.getTickets(doc);
+            List<TicketDto> tickets = client.getTickets(lookup);
             ticketsContainer.removeAll();
             if (tickets.isEmpty()) {
-                Span empty = new Span("Nenhum ingresso encontrado para este documento.");
+                Span empty = new Span("Nenhum ingresso encontrado para os dados informados.");
                 empty.getStyle().set("color", "var(--lumo-secondary-text-color)").set("font-size", "var(--lumo-font-size-m)");
                 ticketsContainer.add(empty);
                 return;

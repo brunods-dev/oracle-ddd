@@ -26,6 +26,7 @@ public final class DataSourceProvider {
         hikari.addDataSourceProperty("prepStmtCacheSize", "250");
         hikari.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         hikari.addDataSourceProperty("useServerPrepStmts", "true");
+        hikari.addDataSourceProperty("rewriteBatchedStatements", "true");
         return new HikariDataSource(hikari);
     }
 }

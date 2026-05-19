@@ -96,8 +96,8 @@ public class BackendClient {
                 customerAuth, Map.of(), new TypeReference<>() {});
     }
 
-    public List<TicketDto> getTickets(String documentNumber) {
-        String encoded = URLEncoder.encode(documentNumber, StandardCharsets.UTF_8);
+    public List<TicketDto> getTickets(String lookup) {
+        String encoded = URLEncoder.encode(lookup, StandardCharsets.UTF_8);
         return get(props.url() + "/api/public/customers/" + encoded + "/tickets",
                 customerAuth, new TypeReference<>() {});
     }
@@ -119,15 +119,58 @@ public class BackendClient {
         return get(url, adminAuth, new TypeReference<>() {});
     }
 
+    // ---- Live Demo (Admin) ----
+
+    public DashboardStatusDto getLiveDashboard() {
+        return get(props.url() + "/api/admin/dashboard/status", adminAuth,
+                new TypeReference<>() {}, Duration.ofSeconds(25));
+    }
+
+    public HeatwaveAnalyticsDto getHeatwaveAnalytics() {
+        return get(props.url() + "/api/admin/heatwave/analytics", adminAuth, new TypeReference<>() {});
+    }
+
+    public List<MatchOptionDto> getMatchOptions() {
+        var wrapper = get(props.url() + "/api/admin/matches/options", adminAuth,
+                new TypeReference<Map<String, Object>>() {});
+        @SuppressWarnings("unchecked")
+        var raw = (List<Map<String, Object>>) wrapper.get("matches");
+        if (raw == null) return List.of();
+        return raw.stream().map(m -> MAPPER.convertValue(m, MatchOptionDto.class)).toList();
+    }
+
+    public SelloutStatusDto getSelloutStatus(int matchNumber) {
+        return get(props.url() + "/api/admin/sellout/status?matchNumber=" + matchNumber,
+                adminAuth, new TypeReference<>() {});
+    }
+
+    public void startSellout(SelloutStartRequest request) {
+        post(props.url() + "/api/admin/sellout/start", adminAuth, request, new TypeReference<Map<String, Object>>() {});
+    }
+
+    public SelloutStatusDto resetSellout(int matchNumber) {
+        post(props.url() + "/api/admin/sellout/reset", adminAuth,
+                Map.of("matchNumber", matchNumber), new TypeReference<Map<String, Object>>() {});
+        try {
+            return getSelloutStatus(matchNumber);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // ---- HTTP helpers ----
 
     private <T> T get(String url, String auth, TypeReference<T> type) {
+        return get(url, auth, type, Duration.ofSeconds(10));
+    }
+
+    private <T> T get(String url, String auth, TypeReference<T> type, Duration timeout) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Authorization", auth)
                     .header("Accept", "application/json")
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(timeout)
                     .GET()
                     .build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
