@@ -1,6 +1,20 @@
+import './vaadin-featureflags.js';
+
 import 'Frontend/generated/jar-resources/copilot.js';
 // @ts-ignore
 if (import.meta.hot) {
+  // @ts-ignore
+  import.meta.hot.on('vite:beforeUpdate', (e:any) => {
+    if ((window as any).Vaadin.copilot?.disableViteHmr) {
+        e.updates = [];
+    }
+  });
+  // @ts-ignore
+  import.meta.hot.on('vite:beforeFullReload', (payload:any) => {
+    if ((window as any).Vaadin.copilot?.disableViteHmr) {
+        payload.path = "something-not-used-in-the-app-to-prevent-reload.html";
+    }
+  });
   // @ts-ignore
   import.meta.hot.on('vite:afterUpdate', () => {
     const eventbus = (window as any).Vaadin.copilot.eventbus;
@@ -25,13 +39,13 @@ import '@vaadin/overlay/theme/lumo/vaadin-overlay.js';
 import '@vaadin/list-box/theme/lumo/vaadin-list-box.js';
 import '@vaadin/combo-box/theme/lumo/vaadin-combo-box.js';
 import '@vaadin/item/theme/lumo/vaadin-item.js';
+import '@vaadin/tabsheet/theme/lumo/vaadin-tabsheet.js';
 import '@vaadin/dialog/theme/lumo/vaadin-dialog.js';
 import '@vaadin/multi-select-combo-box/theme/lumo/vaadin-multi-select-combo-box.js';
 import '@vaadin/radio-group/theme/lumo/vaadin-radio-group.js';
+import '@vaadin/tooltip/theme/lumo/vaadin-tooltip.js';
 import '@vaadin/icons/vaadin-iconset.js';
 import '@vaadin/icon/vaadin-icon.js';
-import './vaadin-featureflags.js';
-
 import './index';
 
 import './vaadin-react.js';

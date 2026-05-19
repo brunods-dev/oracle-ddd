@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Debouncer } from '@polymer/polymer/lib/utils/debounce.js';
-import { timeOut, animationFrame } from '@polymer/polymer/lib/utils/async.js';
+import { Debouncer } from '@vaadin/component-base/src/debounce.js';
+import { timeOut, animationFrame } from '@vaadin/component-base/src/async.js';
 import { Grid } from '@vaadin/grid/src/vaadin-grid.js';
 import { isFocusable } from '@vaadin/grid/src/vaadin-grid-active-item-mixin.js';
 import { GridFlowSelectionColumn } from './vaadin-grid-flow-selection-column.js';
@@ -234,7 +234,7 @@ window.Vaadin.Flow.gridConnector.initLazy = (grid) => {
     const delay = grid._hasData ? rootRequestDelay : 0;
 
     rootRequestDebouncer = Debouncer.debounce(rootRequestDebouncer, timeOut.after(delay), () => {
-      grid.$connector.fetchPage((firstIndex, size) => grid.$server.setRequestedRange(firstIndex, size), page, root);
+      grid.$connector.fetchPage((firstIndex, size) => grid.$server.setViewportRange(firstIndex, size), page, root);
     });
   };
 
@@ -734,19 +734,11 @@ window.Vaadin.Flow.gridConnector.initLazy = (grid) => {
 
   grid.$connector.reset = function () {
     cache = {};
-    dataProviderController.rootCache.items = [];
+    dataProviderController.clearCache();
     lastRequestedRanges = {};
-    if (ensureSubCacheDebouncer) {
-      ensureSubCacheDebouncer.cancel();
-    }
-    if (parentRequestDebouncer) {
-      parentRequestDebouncer.cancel();
-    }
-    if (rootRequestDebouncer) {
-      rootRequestDebouncer.cancel();
-    }
-    ensureSubCacheDebouncer = undefined;
-    parentRequestDebouncer = undefined;
+    ensureSubCacheDebouncer?.cancel();
+    parentRequestDebouncer?.cancel();
+    rootRequestDebouncer?.cancel();
     ensureSubCacheQueue = [];
     parentRequestQueue = [];
     updateAllGridRowsInDomBasedOnCache();
@@ -775,12 +767,27 @@ window.Vaadin.Flow.gridConnector.initLazy = (grid) => {
   };
 
   grid.$connector.removeFromQueue = function (item) {
-    // The page callbacks for the given item are about to be discarded ->
-    // Resolve the callbacks with an empty array to not leave grid in loading state
-    const itemSubCache = dataProviderController.getItemSubCache(item);
-    Object.values(itemSubCache?.pendingRequests || {}).forEach((callback) => callback([]));
-
     const itemId = grid.getItemId(item);
+    const itemContext = dataProviderController.getItemContext(item);
+    const itemSubCache = itemContext?.subCache;
+    const hasPendingRequests = Object.keys(itemSubCache?.pendingRequests || {}).length > 0;
+
+    if (hasPendingRequests) {
+      // Clear the last requested range for this parent to allow fresh requests on re-expand
+      delete lastRequestedRanges[itemId];
+
+      // Clear the connector cache for this parent to avoid stale data
+      delete cache[itemId];
+
+      // Resolve pending callbacks to not leave grid in loading state
+      Object.values(itemSubCache.pendingRequests).forEach((callback) => callback([]));
+
+      // Remove the sub-cache completely so it gets recreated on re-expand.
+      // This forces the grid to request fresh data instead of using cached size=0
+      // (which was set by callback([]) above).
+      itemContext.cache.removeSubCache(itemContext.index);
+    }
+
     ensureSubCacheQueue = ensureSubCacheQueue.filter((item) => item.itemkey !== itemId);
     parentRequestQueue = parentRequestQueue.filter((item) => item.parentKey !== itemId);
   };
@@ -1111,7 +1118,7 @@ window.Vaadin.Flow.gridConnector.initLazy = (grid) => {
     if (
       content.some((node) => {
         // Ignore focus buttons that the component renders into cells in focus button mode on MacOS
-        const focusable = cell._focusButton !== node && isFocusable(node);
+        const focusable = cell?._focusButton !== node && isFocusable(node);
         return focusable || node instanceof HTMLLabelElement;
       })
     ) {

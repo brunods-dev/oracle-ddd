@@ -5,7 +5,7 @@ Duas aplicações Java 25 / GraalVM Native Image:
 | Módulo | Stack | Porta |
 |--------|-------|-------|
 | `backend/` | Helidon SE 4 · HikariCP · MySQL | 8080 |
-| `frontend/` | Vaadin Flow 24 · Spring Boot 3 | 8081 |
+| `frontend/` | Vaadin Flow 24.10 · Spring Boot 3 | 8081 |
 
 ---
 
@@ -83,6 +83,21 @@ Abra: http://localhost:8081
 
 ---
 
+## Build de produção (frontend)
+
+O profile `production` gera o bundle Vite e empacota o JAR sem dependências de dev. Requer **Vaadin 24.10+** com **Java 25** (versões anteriores do plugin falham ao ler bytecode 69).
+
+```bash
+cd frontend
+export $(cat .env | grep -v '#' | xargs)
+mvn clean -Pproduction -DskipTests package
+java --enable-preview -jar target/copa-frontend-1.0.0.jar
+```
+
+Arquivos gerados localmente (`src/main/frontend/generated/`, `vite.generated.ts`, `prod.bundle`) não entram no Git — são recriados pelo Maven.
+
+---
+
 ## Build Native Image (GraalVM)
 
 ### Backend
@@ -99,10 +114,7 @@ mvn package -Pnative-image -DskipTests
 ```bash
 cd frontend
 export $(cat .env | grep -v '#' | xargs)
-# 1. bundlar frontend Vite
-mvn vaadin:prepare-frontend vaadin:build-frontend -Pproduction
-# 2. compilar native image
-mvn package -Pproduction,native -DskipTests
+mvn clean package -Pproduction,native -DskipTests
 ./target/copa-frontend
 ```
 

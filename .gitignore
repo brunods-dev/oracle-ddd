@@ -1,4 +1,4 @@
-# Secrets 
+# Secrets
 **/.env
 !**/.env.example
 
@@ -16,7 +16,9 @@ frontend/node_modules/
 .npm/
 .vaadin/
 frontend/.vaadin/
-frontend/generated/
+frontend/vite.generated.ts
+frontend/src/main/frontend/generated/
+frontend/src/main/bundles/prod.bundle
 
 # Logs
 *.log
@@ -45,6 +47,7 @@ Desktop.ini
 *~
 *.swp
 *.swo
+Untitled
 
-
+# Demo share (local credentials / exports)
 copa_ticketing_demo_share/
