@@ -1,0 +1,37 @@
+{
+  "reflection": [
+    {
+      "type": "org.springframework.core.annotation.TypeMappedAnnotation[]"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.MatchDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.SectorDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.SeatDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.OrderDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.TicketDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.DashboardDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.DashboardDto$TopMatchDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.DashboardDto$DailySaleDto"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.PagedResponse"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.BackendProperties"
+    }
+  ]
+}

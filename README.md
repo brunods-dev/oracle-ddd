@@ -94,8 +94,6 @@ mvn clean -Pproduction -DskipTests package
 java --enable-preview -jar target/copa-frontend-1.0.0.jar
 ```
 
-Arquivos gerados localmente (`src/main/frontend/generated/`, `vite.generated.ts`, `prod.bundle`) não entram no Git — são recriados pelo Maven.
-
 ---
 
 ## Build Native Image (GraalVM)
