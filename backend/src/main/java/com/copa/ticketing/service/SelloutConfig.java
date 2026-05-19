@@ -21,6 +21,6 @@ public record SelloutConfig(
     }
 
     public static SelloutConfig withDefaults(int matchNumber) {
-        return new SelloutConfig(matchNumber, 4, 500, 0, 0, 0, 100, 0.74);
+        return new SelloutConfig(matchNumber, 4, 1000, 0, 0, 0, 100, 0.74);
     }
 }

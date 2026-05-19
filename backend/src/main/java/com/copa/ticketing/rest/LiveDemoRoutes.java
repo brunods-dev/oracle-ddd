@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class LiveDemoRoutes implements HttpService {
 
-    private static final long HW_CACHE_TTL_MS = 6_000;
+    private static final long HW_CACHE_TTL_MS = 2_000;
 
     private final HeatwaveRepository hwRepo;
     private final SelloutJobManager jobManager;
@@ -139,7 +139,7 @@ public class LiveDemoRoutes implements HttpService {
             Map<String, Object> body = JsonUtil.MAPPER.readValue(req.content().as(byte[].class), Map.class);
             int matchNumber = toInt(body.getOrDefault("matchNumber", 68));
             int orderSize = toInt(body.getOrDefault("orderSize", 4));
-            int batchOrders = toInt(body.getOrDefault("batchOrders", 500));
+            int batchOrders = toInt(body.getOrDefault("batchOrders", 1000));
             int maxSeats = toInt(body.getOrDefault("maxSeats", 0));
 
             @SuppressWarnings("unchecked")
@@ -178,6 +178,11 @@ public class LiveDemoRoutes implements HttpService {
         } catch (Exception e) {
             JsonUtil.error(res, 500, "Error resetting: " + e.getMessage());
         }
+    }
+
+    public void invalidateHeatwaveCache() {
+        hwCached = null;
+        hwCacheExpiry = 0;
     }
 
     private HeatwaveAnalytics cachedHeatwave() throws SQLException {

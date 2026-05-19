@@ -36,9 +36,17 @@ public class SelloutJobManager {
     private volatile long matchOptionsCacheExpiry = 0;
     private volatile List<?> matchOptionsPayload = null;
 
+    private volatile Runnable onBatchCallback = () -> {};
+    private final Map<Integer, Long> lastOccupiedByMatch = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> lastSoldByMatch = new ConcurrentHashMap<>();
+
     public SelloutJobManager(SelloutRepository selloutRepo, MatchSelloutSimulator simulator) {
         this.selloutRepo = selloutRepo;
         this.simulator = simulator;
+    }
+
+    public void setOnBatchCallback(Runnable callback) {
+        this.onBatchCallback = callback != null ? callback : () -> {};
     }
 
     public synchronized void start(int matchNumber, SelloutConfig cfg) throws SQLException {
@@ -53,6 +61,8 @@ public class SelloutJobManager {
 
         clearEvents();
         statusCache.clear();
+        lastOccupiedByMatch.remove(matchNumber);
+        lastSoldByMatch.remove(matchNumber);
         activeMatchNumber.set(matchNumber);
 
         pushEvent("Iniciando carga real no MySQL para match_number=" + matchNumber +
@@ -65,6 +75,7 @@ public class SelloutJobManager {
                 simulator.run(cfg, (msg, totals) -> {
                     pushEvent(msg);
                     statusCache.remove(matchNumber);
+                    onBatchCallback.run();
                 });
                 pushEvent("Carga real concluída.");
             } catch (Exception e) {
@@ -87,6 +98,8 @@ public class SelloutJobManager {
         selloutRepo.resetDemoTransactions();
         clearEvents();
         statusCache.clear();
+        lastOccupiedByMatch.clear();
+        lastSoldByMatch.clear();
         matchOptionsCacheExpiry = 0;
         matchOptionsPayload = null;
         pushEvent("TRUNCATE executado nas tabelas transacionais.");
@@ -101,6 +114,7 @@ public class SelloutJobManager {
         }
 
         SelloutStatus fresh = loadStatusFresh(matchNumber, snapshotEvents());
+        fresh = applyDeltas(matchNumber, fresh);
         statusCache.put(matchNumber, new CachedStatus(fresh, now + STATUS_CACHE_TTL_MS));
         return enrichWithRuntime(fresh);
     }
@@ -145,6 +159,26 @@ public class SelloutJobManager {
                 raw.sectors(), raw.totals(), raw.statusMix(), raw.paidOrders(), raw.revenue(),
                 raw.deltaSold(), raw.deltaOccupied(),
                 running, actMatch, raw.progressPercent(), currentEvents
+        );
+    }
+
+    private SelloutStatus applyDeltas(int matchNumber, SelloutStatus status) {
+        if (status.totals() == null) return status;
+        long sold = status.totals().sold();
+        long occupied = sold + status.totals().reserved();
+        long prevSold = lastSoldByMatch.getOrDefault(matchNumber, 0L);
+        long prevOccupied = lastOccupiedByMatch.getOrDefault(matchNumber, 0L);
+        long deltaSold = Math.max(0, sold - prevSold);
+        long deltaOccupied = Math.max(0, occupied - prevOccupied);
+        lastSoldByMatch.put(matchNumber, sold);
+        lastOccupiedByMatch.put(matchNumber, occupied);
+        return new SelloutStatus(
+                status.matchId(), status.matchNumber(), status.matchStatus(), status.capacity(),
+                status.homeTeam(), status.awayTeam(), status.venueName(), status.city(),
+                status.country(), status.venueTimeZone(),
+                status.sectors(), status.totals(), status.statusMix(), status.paidOrders(), status.revenue(),
+                deltaSold, deltaOccupied,
+                status.running(), status.activeMatchNumber(), status.progressPercent(), status.events()
         );
     }
 

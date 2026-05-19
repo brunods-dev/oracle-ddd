@@ -53,6 +53,7 @@ public class Main {
         var publicRoutes = new PublicRoutes(matchRepo, customerRepo, reservationRepo, orderRepo, cfg);
         var adminRoutes = new AdminRoutes(dashboardRepo, orderRepo, cfg);
         var liveDemoRoutes = new LiveDemoRoutes(hwRepo, jobManager);
+        jobManager.setOnBatchCallback(liveDemoRoutes::invalidateHeatwaveCache);
 
         var server = WebServer.builder()
                 .port(cfg.serverPort())

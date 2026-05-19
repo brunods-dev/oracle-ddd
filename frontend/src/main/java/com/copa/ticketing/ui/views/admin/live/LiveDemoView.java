@@ -22,11 +22,15 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.security.RolesAllowed;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Route(value = "admin/live", layout = MainLayout.class)
 @PageTitle("Demonstração ao Vivo | Copa 2026 Admin")
@@ -35,11 +39,27 @@ public class LiveDemoView extends VerticalLayout {
 
     private static final Executor ASYNC = Executors.newVirtualThreadPerTaskExecutor();
 
+    // Poll at 500ms base; HW fires every 3 ticks (1500ms), sellout every 5 ticks (2500ms)
+    private static final int POLL_BASE_MS = 500;
+    private static final int HW_TICKS = 3;
+    private static final int SELLOUT_TICKS = 5;
+
     private final BackendClient client;
 
     // HeatWave section state
     private boolean hwTimerOn = false;
     private Registration pollRegistration;
+    private final AtomicBoolean hwInFlight = new AtomicBoolean(false);
+    private final AtomicBoolean selloutInFlight = new AtomicBoolean(false);
+    private final AtomicInteger hwTickCount = new AtomicInteger(0);
+    private final AtomicInteger selloutTickCount = new AtomicInteger(0);
+
+    // Last-render caches to skip redundant DOM updates
+    private final Map<String, long[]> lastZoneState = new HashMap<>();
+    private int lastFeedSize = 0;
+    private String lastFeedFirstMsg = null;
+    private int lastMatchBarsSize = -1;
+    private long lastMatchBarsRevHash = 0;
 
     // HeatWave hero widgets
     private final Span hwHeroRevenue = new Span("$0");
@@ -132,8 +152,13 @@ public class LiveDemoView extends VerticalLayout {
     @Override
     protected void onAttach(AttachEvent event) {
         UI ui = event.getUI();
-        ui.setPollInterval(2000);
+        ui.setPollInterval(POLL_BASE_MS);
         pollRegistration = ui.addPollListener(e -> onPoll(ui));
+        // Auto-start HW reading like JS (state.running = true on load)
+        hwTimerOn = true;
+        hwToggle.setText("Parar leitura HeatWave");
+        hwStatus.setText("Leitura automática a cada 1,5s");
+        readHeatwaveNow();
     }
 
     @Override
@@ -142,28 +167,38 @@ public class LiveDemoView extends VerticalLayout {
             pollRegistration.remove();
             pollRegistration = null;
         }
-        UI ui = event.getUI();
-        ui.setPollInterval(-1);
+        event.getUI().setPollInterval(-1);
     }
 
     private void onPoll(UI ui) {
-        if (hwTimerOn || selloutRunning) {
-            CompletableFuture.supplyAsync(() -> {
-                try { return client.getLiveDashboard(); } catch (Exception ex) { return ex; }
-            }, ASYNC).thenAccept(result -> {
-                if (result instanceof DashboardStatusDto dash) {
-                    ui.access(() -> updateHeatwaveUI(dash));
-                } else if (result instanceof Exception ex) {
-                    String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
-                    ui.access(() -> hwStatus.setText("Erro HeatWave: " + msg));
-                }
-            });
+        if (hwTimerOn && hwTickCount.incrementAndGet() >= HW_TICKS) {
+            hwTickCount.set(0);
+            if (hwInFlight.compareAndSet(false, true)) {
+                CompletableFuture.supplyAsync(() -> {
+                    try { return client.getLiveDashboard(); } catch (Exception ex) { return ex; }
+                }, ASYNC).thenAccept(result -> {
+                    hwInFlight.set(false);
+                    if (result instanceof DashboardStatusDto dash) {
+                        ui.access(() -> updateHeatwaveUI(dash));
+                    } else if (result instanceof Exception ex) {
+                        String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                        ui.access(() -> hwStatus.setText("Erro HeatWave: " + msg));
+                    }
+                });
+            }
         }
-        CompletableFuture.supplyAsync(() -> {
-            try { return client.getSelloutStatus(selectedMatchNumber); } catch (Exception ex) { return null; }
-        }, ASYNC).thenAccept(status -> {
-            if (status != null) ui.access(() -> updateSelloutUI(status));
-        });
+
+        if (selloutRunning && selloutTickCount.incrementAndGet() >= SELLOUT_TICKS) {
+            selloutTickCount.set(0);
+            if (selloutInFlight.compareAndSet(false, true)) {
+                CompletableFuture.supplyAsync(() -> {
+                    try { return client.getSelloutStatus(selectedMatchNumber); } catch (Exception ex) { return null; }
+                }, ASYNC).thenAccept(status -> {
+                    selloutInFlight.set(false);
+                    if (status != null) ui.access(() -> updateSelloutUI(status));
+                });
+            }
+        }
     }
 
     // ---- HeatWave section ----
@@ -390,6 +425,10 @@ public class LiveDemoView extends VerticalLayout {
                 selloutMatchTitle.setText(m.homeTeam() + " x " + m.awayTeam());
                 selloutMatchMeta.setText(m.venueName() + ", " + m.city() + " · capacidade " + m.capacity());
                 selloutCapacityLabel.setText("capacidade " + m.capacity());
+                lastZoneState.clear();
+                lastFeedSize = 0;
+                lastFeedFirstMsg = null;
+                fetchSelloutStatusNow();
             }
         });
 
@@ -575,14 +614,17 @@ public class LiveDemoView extends VerticalLayout {
                     selloutModeNote.setText("conectado ao backend");
                 });
             }
-        });
+        }).thenRunAsync(() -> {
+            if (ui != null) ui.access(this::fetchSelloutStatusNow);
+        }, ASYNC);
     }
 
     private void toggleHwTimer() {
         hwTimerOn = !hwTimerOn;
         if (hwTimerOn) {
             hwToggle.setText("Parar leitura HeatWave");
-            hwStatus.setText("Leitura automática a cada 2s");
+            hwStatus.setText("Leitura automática a cada 1,5s");
+            hwTickCount.set(0);
             readHeatwaveNow();
         } else {
             hwToggle.setText("Iniciar leitura HeatWave");
@@ -597,6 +639,19 @@ public class LiveDemoView extends VerticalLayout {
         }, ASYNC).thenAccept(dash -> {
             if (dash != null && ui != null) ui.access(() -> updateHeatwaveUI(dash));
         });
+    }
+
+    private void fetchSelloutStatusNow() {
+        UI ui = UI.getCurrent();
+        int matchNum = selectedMatchNumber;
+        if (selloutInFlight.compareAndSet(false, true)) {
+            CompletableFuture.supplyAsync(() -> {
+                try { return client.getSelloutStatus(matchNum); } catch (Exception e) { return null; }
+            }, ASYNC).thenAccept(status -> {
+                selloutInFlight.set(false);
+                if (status != null && ui != null) ui.access(() -> updateSelloutUI(status));
+            });
+        }
     }
 
     private void updateHeatwaveUI(DashboardStatusDto dash) {
@@ -629,8 +684,14 @@ public class LiveDemoView extends VerticalLayout {
         hwInsightPending.setText(formatMoney(sum.pendingAmount()));
         hwInsightPendingDetail.setText(sum.activeReservations() + " reservas em aberto");
 
-        renderBars(hwMatchBars, dash.matches().stream()
-                .map(m -> new BarEntry(m.label(), m.value())).toList(), maxRev);
+        List<BarEntry> matchEntries = dash.matches().stream()
+                .map(m -> new BarEntry(m.label(), m.value())).toList();
+        long matchRevHash = dash.matches().stream().mapToLong(m -> (long) m.value()).sum();
+        if (matchEntries.size() != lastMatchBarsSize || matchRevHash != lastMatchBarsRevHash) {
+            lastMatchBarsSize = matchEntries.size();
+            lastMatchBarsRevHash = matchRevHash;
+            renderBars(hwMatchBars, matchEntries, maxRev);
+        }
         double maxC = dash.countries().stream().mapToDouble(DashboardStatusDto.LabelValue::value).max().orElse(1);
         renderBars(hwCountryBars, dash.countries().stream()
                 .map(c -> new BarEntry(c.label(), c.value())).toList(), maxC);
@@ -695,15 +756,32 @@ public class LiveDemoView extends VerticalLayout {
             selloutOccupancy.setText(String.format("%.1f%%", occ));
             selloutOrders.setText(String.valueOf(status.paidOrders()));
             selloutRevenue.setText(formatMoney(status.revenue()));
-
             selloutProgress.getStyle().set("width", String.format(Locale.US, "%.1f%%", status.progressPercent()));
+        }
+
+        long deltaOccupied = status.deltaOccupied() > 0 ? status.deltaOccupied() : status.deltaSold();
+        if (deltaOccupied > 0) {
+            selloutSoldDelta.setText("+" + deltaOccupied + " ocupados desde a última leitura");
+        }
+
+        // Batch KPI: derive from latest event message (batch=N setor=X)
+        if (status.events() != null && !status.events().isEmpty()) {
+            String latestMsg = status.events().get(0).message();
+            if (latestMsg != null) {
+                String batchVal = extractToken(latestMsg, "batch=");
+                String sectorVal = extractToken(latestMsg, "setor=");
+                if (batchVal != null) selloutBatch.setText("lote " + batchVal);
+                if (sectorVal != null) selloutBatchLabel.setText(selloutRunning ? "setor " + sectorVal : "concluído");
+            }
+        } else if (!selloutRunning) {
+            selloutBatchLabel.setText("aguardando início");
         }
 
         if (status.statusMix() != null) {
             renderSectorBars(selloutSectorBars, status);
         }
 
-        // Update sector dots
+        // Update sector dots (skipping if unchanged)
         if (status.sectors() != null) {
             for (SectorStatus s : status.sectors()) {
                 switch (s.sectorCode()) {
@@ -715,26 +793,47 @@ public class LiveDemoView extends VerticalLayout {
             }
         }
 
-        // Feed events
+        // Feed events — only re-render when list changed
         if (status.events() != null && !status.events().isEmpty()) {
-            selloutFeed.removeAll();
-            for (SelloutEventDto ev : status.events()) {
-                Div entry = new Div();
-                entry.addClassName("batch-entry");
-                Span ts = new Span(ev.at() != null ? ev.at().substring(11, 19) : "");
-                ts.addClassName("batch-ts");
-                Span msg = new Span(ev.message());
-                entry.add(ts, msg);
-                selloutFeed.add(entry);
+            int newSize = status.events().size();
+            String newFirst = status.events().get(0).message();
+            if (newSize != lastFeedSize || !newFirst.equals(lastFeedFirstMsg)) {
+                lastFeedSize = newSize;
+                lastFeedFirstMsg = newFirst;
+                selloutFeed.removeAll();
+                for (SelloutEventDto ev : status.events()) {
+                    Div entry = new Div();
+                    entry.addClassName("batch-entry");
+                    Span ts = new Span(ev.at() != null ? ev.at().substring(11, 19) : "");
+                    ts.addClassName("batch-ts");
+                    Span msg = new Span(ev.message());
+                    entry.add(ts, msg);
+                    selloutFeed.add(entry);
+                }
             }
         }
 
-        if (!wasRunning && selloutRunning && !hwTimerOn) {
-            readHeatwaveNow();
+        if (!wasRunning && selloutRunning) {
+            selloutTickCount.set(0);
+            if (!hwTimerOn) readHeatwaveNow();
         }
     }
 
+    private static String extractToken(String msg, String prefix) {
+        int idx = msg.indexOf(prefix);
+        if (idx < 0) return null;
+        int start = idx + prefix.length();
+        int end = msg.indexOf(' ', start);
+        return end < 0 ? msg.substring(start) : msg.substring(start, end);
+    }
+
     private void updateZoneDots(Div dotsContainer, Span label, SectorStatus sector, String soldClass) {
+        long[] prev = lastZoneState.get(sector.sectorCode());
+        long newSold = sector.soldQuantity();
+        long newReserved = sector.reservedQuantity();
+        if (prev != null && prev[0] == newSold && prev[1] == newReserved) return;
+        lastZoneState.put(sector.sectorCode(), new long[]{newSold, newReserved});
+
         label.setText(sector.soldQuantity() + " emitidos");
         dotsContainer.removeAll();
 
@@ -840,7 +939,11 @@ public class LiveDemoView extends VerticalLayout {
                 });
                 return;
             }
-            if (ui != null) ui.access(() -> selloutPlay.setEnabled(true));
+            if (ui != null) ui.access(() -> {
+                selloutPlay.setEnabled(true);
+                selloutTickCount.set(0);
+                fetchSelloutStatusNow();
+            });
         }, ASYNC);
     }
 

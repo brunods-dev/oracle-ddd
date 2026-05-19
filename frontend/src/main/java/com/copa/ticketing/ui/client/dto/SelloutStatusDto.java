@@ -21,6 +21,8 @@ public record SelloutStatusDto(
         @JsonProperty("statusMix") StatusMix statusMix,
         @JsonProperty("paidOrders") long paidOrders,
         @JsonProperty("revenue") double revenue,
+        @JsonProperty("deltaSold") long deltaSold,
+        @JsonProperty("deltaOccupied") long deltaOccupied,
         @JsonProperty("running") boolean running,
         @JsonProperty("activeMatchNumber") Integer activeMatchNumber,
         @JsonProperty("progressPercent") double progressPercent,

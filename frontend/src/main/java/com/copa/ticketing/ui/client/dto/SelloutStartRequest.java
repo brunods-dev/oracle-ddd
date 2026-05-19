@@ -10,7 +10,7 @@ public record SelloutStartRequest(
         Map<String, Object> statusMix
 ) {
     public static SelloutStartRequest of(int matchNumber, double reservedPct, double pendingPct, double issuedPct) {
-        return new SelloutStartRequest(matchNumber, 4, 500, 0,
+        return new SelloutStartRequest(matchNumber, 4, 1000, 0,
                 Map.of("reservedPercent", reservedPct,
                         "paymentPendingPercent", pendingPct,
                         "issuedPercent", issuedPct));
