@@ -30,6 +30,12 @@ spec:
   # NodePort keeps this compatible with OCI Native Ingress on Flannel OKE clusters.
   type: NodePort
   externalTrafficPolicy: Cluster
+  # Vaadin and Spring Security keep UI/auth state in the frontend JVM session.
+  # Keep one browser on the same pod unless Spring Session is introduced.
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
   selector:
     app.kubernetes.io/name: copa-frontend
   ports:

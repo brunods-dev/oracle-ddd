@@ -32,7 +32,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: ${FRONTEND_PORT}
           envFrom:
             - secretRef:
                 name: copa-app-secrets
