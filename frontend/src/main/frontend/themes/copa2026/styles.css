@@ -59,6 +59,16 @@ html {
   --lumo-warning-color-10pct:        rgba(217, 119, 6, 0.1);
 }
 
+/* AI recommendation spinner */
+@keyframes copa-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ai-loading-spinner {
+  display: inline-flex;
+  animation: copa-spin 0.75s linear infinite;
+}
+
 /* Body */
 body {
   background-color: var(--copa-surface);

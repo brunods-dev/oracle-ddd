@@ -102,6 +102,16 @@ public class BackendClient {
                 customerAuth, new TypeReference<>() {});
     }
 
+    // ---- AI Recommendations ----
+
+    public List<MatchRecommendationDto> getRecommendations(List<String> favoriteTeams, List<String> cities) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("favoriteTeams", favoriteTeams);
+        body.put("cities", cities);
+        return post(props.url() + "/api/public/recommendations", customerAuth, body,
+                new TypeReference<>() {});
+    }
+
     // ---- Admin ----
 
     public DashboardDto getDashboard() {

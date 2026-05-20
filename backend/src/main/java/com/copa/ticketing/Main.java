@@ -8,6 +8,7 @@ import com.copa.ticketing.rest.AdminRoutes;
 import com.copa.ticketing.rest.LiveDemoRoutes;
 import com.copa.ticketing.rest.PublicRoutes;
 import com.copa.ticketing.security.BasicAuthConfig;
+import com.copa.ticketing.service.GenAiRecommendationService;
 import com.copa.ticketing.service.MatchSelloutSimulator;
 import com.copa.ticketing.service.SelloutJobManager;
 import io.helidon.config.Config;
@@ -45,12 +46,19 @@ public class Main {
         var simulator = new MatchSelloutSimulator(ds);
         var jobManager = new SelloutJobManager(selloutRepo, simulator);
 
+        var genAiService = (cfg.ociGenAiApiKey() != null)
+                ? new GenAiRecommendationService(cfg, matchRepo)
+                : null;
+        if (genAiService != null) {
+            LOG.info("OCI GenAI recommendations enabled (model: " + cfg.ociGenAiModelId() + ")");
+        }
+
         var security = BasicAuthConfig.build(cfg);
         var secFeature = SecurityFeature.builder()
                 .security(security)
                 .build();
 
-        var publicRoutes = new PublicRoutes(matchRepo, customerRepo, reservationRepo, orderRepo, cfg);
+        var publicRoutes = new PublicRoutes(matchRepo, customerRepo, reservationRepo, orderRepo, cfg, genAiService);
         var adminRoutes = new AdminRoutes(dashboardRepo, orderRepo, cfg);
         var liveDemoRoutes = new LiveDemoRoutes(hwRepo, jobManager);
         jobManager.setOnBatchCallback(liveDemoRoutes::invalidateHeatwaveCache);

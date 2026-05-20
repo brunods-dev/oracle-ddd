@@ -5,6 +5,7 @@ import com.copa.ticketing.domain.Customer;
 import com.copa.ticketing.domain.Reservation;
 import com.copa.ticketing.pagination.Page;
 import com.copa.ticketing.repository.*;
+import com.copa.ticketing.service.GenAiRecommendationService;
 import io.helidon.webserver.http.HttpRules;
 import io.helidon.webserver.http.HttpService;
 import io.helidon.webserver.http.ServerRequest;
@@ -13,23 +14,34 @@ import io.helidon.webserver.http.ServerResponse;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class PublicRoutes implements HttpService {
+
+    private static final Logger LOG = Logger.getLogger(PublicRoutes.class.getName());
 
     private final MatchRepository matchRepo;
     private final CustomerRepository customerRepo;
     private final ReservationRepository reservationRepo;
     private final OrderRepository orderRepo;
     private final AppConfig cfg;
+    private final GenAiRecommendationService genAiService;
 
     public PublicRoutes(MatchRepository matchRepo, CustomerRepository customerRepo,
                         ReservationRepository reservationRepo, OrderRepository orderRepo,
                         AppConfig cfg) {
+        this(matchRepo, customerRepo, reservationRepo, orderRepo, cfg, null);
+    }
+
+    public PublicRoutes(MatchRepository matchRepo, CustomerRepository customerRepo,
+                        ReservationRepository reservationRepo, OrderRepository orderRepo,
+                        AppConfig cfg, GenAiRecommendationService genAiService) {
         this.matchRepo = matchRepo;
         this.customerRepo = customerRepo;
         this.reservationRepo = reservationRepo;
         this.orderRepo = orderRepo;
         this.cfg = cfg;
+        this.genAiService = genAiService;
     }
 
     @Override
@@ -43,7 +55,8 @@ public class PublicRoutes implements HttpService {
             .post("/reservations", this::createReservation)
             .post("/reservations/{code}/checkout", this::checkout)
             .post("/payments/{ref}/confirm", this::confirmPayment)
-            .get("/customers/{doc}/tickets", this::getTickets);
+            .get("/customers/{doc}/tickets", this::getTickets)
+            .post("/recommendations", this::getRecommendations);
     }
 
     private void listMatches(ServerRequest req, ServerResponse res) {
@@ -240,6 +253,32 @@ public class PublicRoutes implements HttpService {
             JsonUtil.ok(res, tickets);
         } catch (SQLException e) {
             JsonUtil.error(res, 500, "Database error: " + e.getMessage());
+        }
+    }
+
+    private void getRecommendations(ServerRequest req, ServerResponse res) {
+        LOG.info("[recommendations] handler reached, genAiService=" + (genAiService != null ? "configured" : "null"));
+        if (genAiService == null) {
+            JsonUtil.error(res, 501, "GenAI not configured — set OCI_GENAI_API_KEY in .env");
+            return;
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> body = JsonUtil.MAPPER.readValue(req.content().as(byte[].class), Map.class);
+            @SuppressWarnings("unchecked")
+            List<String> favoriteTeams = (List<String>) body.getOrDefault("favoriteTeams", List.of());
+            @SuppressWarnings("unchecked")
+            List<String> cities = (List<String>) body.getOrDefault("cities", List.of());
+
+            if (favoriteTeams.isEmpty() && cities.isEmpty()) {
+                JsonUtil.error(res, 400, "Informe ao menos um time ou cidade");
+                return;
+            }
+
+            var recommendations = genAiService.recommend(favoriteTeams, cities);
+            JsonUtil.ok(res, recommendations);
+        } catch (Exception e) {
+            JsonUtil.error(res, 500, "Recommendation error: " + e.getMessage());
         }
     }
 
