@@ -1,6 +1,6 @@
 # Secrets
 **/.env
-!**/.env.example
+**/.env.example
 
 # Maven / Java build
 target/
@@ -51,3 +51,12 @@ Untitled
 
 # Demo share (local credentials / exports)
 copa_ticketing_demo_share/
+
+#Infra
+**/*.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/terraform/.terraform/
+**/terraform/.terraform.lock.hcl
+**/generated/*
+**/!generated/.gitkeep
