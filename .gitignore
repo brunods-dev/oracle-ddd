@@ -60,3 +60,7 @@ copa_ticketing_demo_share/
 **/terraform/.terraform.lock.hcl
 **/generated/*
 **/!generated/.gitkeep
+infra/scripts/images.env
+infra/scripts/db.env
+scripts/images.env
+scripts/db.env

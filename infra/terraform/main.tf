@@ -30,6 +30,36 @@ module "networking" {
   freeform_tags             = local.common_tags
 }
 
+module "db" {
+  source = "./modules/db"
+
+  project_name        = var.project_name
+  compartment_id      = var.compartment_ocid
+  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
+
+  subnet_id     = module.networking.worker_subnet_id
+  nlb_subnet_id = module.networking.lb_subnet_id
+
+  mysql_admin_username          = var.mysql_admin_username
+  mysql_admin_password          = var.mysql_admin_password
+  mysql_shape_name              = var.mysql_shape_name
+  mysql_data_storage_size_in_gb = var.mysql_data_storage_size_in_gb
+  mysql_auto_expand_storage     = var.mysql_auto_expand_storage
+  mysql_max_storage_size_in_gbs = var.mysql_max_storage_size_in_gbs
+  mysql_port                    = var.mysql_port
+  mysql_port_x                  = var.mysql_port_x
+  mysql_database_name           = var.mysql_database_name
+  mysql_enable_heatwave_cluster = var.mysql_enable_heatwave_cluster
+  mysql_heatwave_shape_name     = var.mysql_heatwave_shape_name
+  mysql_heatwave_cluster_size   = var.mysql_heatwave_cluster_size
+
+  freeform_tags = local.common_tags
+
+  depends_on = [
+    module.networking
+  ]
+}
+
 module "container_registry" {
   source = "./modules/container-registry"
 

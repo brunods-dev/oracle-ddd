@@ -172,3 +172,75 @@ variable "node_pool_os_arch_override" {
     error_message = "node_pool_os_arch_override must be empty, X86_64, or AARCH64."
   }
 }
+
+variable "mysql_admin_username" {
+  description = "Administrative username for MySQL HeatWave."
+  type        = string
+  default     = "admin"
+}
+
+variable "mysql_admin_password" {
+  description = "Administrative password for MySQL HeatWave."
+  type        = string
+  sensitive   = true
+}
+
+variable "mysql_shape_name" {
+  description = "MySQL DB System shape."
+  type        = string
+  default     = "MySQL.2"
+}
+
+variable "mysql_data_storage_size_in_gb" {
+  description = "Initial MySQL DB System data storage size in GB."
+  type        = number
+  default     = 50
+}
+
+variable "mysql_auto_expand_storage" {
+  description = "Enable automatic storage expansion."
+  type        = bool
+  default     = true
+}
+
+variable "mysql_max_storage_size_in_gbs" {
+  description = "Maximum storage size when automatic expansion is enabled."
+  type        = number
+  default     = 100
+}
+
+variable "mysql_port" {
+  description = "MySQL TCP port."
+  type        = number
+  default     = 3306
+}
+
+variable "mysql_port_x" {
+  description = "MySQL X Protocol port."
+  type        = number
+  default     = 33060
+}
+
+variable "mysql_database_name" {
+  description = "Application database name."
+  type        = string
+  default     = "copa_ticketing_demo"
+}
+
+variable "mysql_enable_heatwave_cluster" {
+  description = "Whether to attach a HeatWave cluster to the MySQL DB System."
+  type        = bool
+  default     = true
+}
+
+variable "mysql_heatwave_shape_name" {
+  description = "HeatWave cluster shape."
+  type        = string
+  default     = "HeatWave.32GB"
+}
+
+variable "mysql_heatwave_cluster_size" {
+  description = "Number of HeatWave cluster nodes."
+  type        = number
+  default     = 1
+}

@@ -106,3 +106,51 @@ output "worker_node_container_platform" {
 output "selected_node_image_name" {
   value = module.oke.selected_node_image_name
 }
+
+output "mysql_db_system_id" {
+  value = module.db.mysql_db_system_id
+}
+
+output "mysql_db_system_state" {
+  value = module.db.mysql_db_system_state
+}
+
+output "mysql_private_ip" {
+  value = module.db.mysql_private_ip
+}
+
+output "mysql_private_hostname" {
+  value = module.db.mysql_private_hostname
+}
+
+output "mysql_port" {
+  value = module.db.mysql_port
+}
+
+output "mysql_database_name" {
+  value = module.db.mysql_database_name
+}
+
+output "mysql_public_ip" {
+  value = module.db.mysql_public_ip
+}
+
+output "mysql_public_endpoint" {
+  value = module.db.mysql_public_endpoint
+}
+
+output "mysql_public_jdbc_url" {
+  value = module.db.mysql_public_jdbc_url
+}
+
+output "mysql_private_jdbc_url" {
+  value = module.db.mysql_private_jdbc_url
+}
+
+output "mysql_heatwave_cluster_id" {
+  value = module.db.mysql_heatwave_cluster_id
+}
+
+output "mysql_heatwave_cluster_state" {
+  value = module.db.mysql_heatwave_cluster_state
+}
