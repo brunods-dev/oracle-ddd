@@ -1,6 +1,7 @@
 package com.copa.ticketing.ui.layout;
 
 import com.copa.ticketing.ui.views.admin.DashboardView;
+import com.copa.ticketing.ui.views.admin.HeatwaveNlSqlView;
 import com.copa.ticketing.ui.views.admin.InventoryView;
 import com.copa.ticketing.ui.views.admin.OrdersView;
 import com.copa.ticketing.ui.views.admin.live.LiveDemoView;
@@ -102,6 +103,7 @@ public class MainLayout extends AppLayout {
         nav.addItem(new SideNavItem("Dashboard", DashboardView.class, VaadinIcon.DASHBOARD.create()));
         nav.addItem(new SideNavItem("Pedidos", OrdersView.class, VaadinIcon.LIST.create()));
         nav.addItem(new SideNavItem("Estoque", InventoryView.class, VaadinIcon.CHART.create()));
+        nav.addItem(new SideNavItem("HeatWave NL_SQL", HeatwaveNlSqlView.class, VaadinIcon.SEARCH.create()));
         nav.addItem(new SideNavItem("Demonstração ao Vivo", LiveDemoView.class, VaadinIcon.FLASH.create()));
         return nav;
     }

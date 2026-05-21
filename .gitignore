@@ -1,6 +1,6 @@
 # Secrets
 **/.env
-**/.env.example
+!**/.env.example
 
 # Maven / Java build
 target/
@@ -53,6 +53,7 @@ Untitled
 copa_ticketing_demo_share/
 
 #Infra
+*.pem
 **/*.terraform/
 **/*.tfstate
 **/*.tfstate.*

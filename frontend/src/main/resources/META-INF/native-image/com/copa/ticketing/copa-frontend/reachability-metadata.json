@@ -32,6 +32,9 @@
     },
     {
       "type": "com.copa.ticketing.ui.client.BackendProperties"
+    },
+    {
+      "type": "com.copa.ticketing.ui.client.dto.HeatwaveNlSqlResponseDto"
     }
   ]
 }

@@ -59,6 +59,16 @@ html {
   --lumo-warning-color-10pct:        rgba(217, 119, 6, 0.1);
 }
 
+/* AI recommendation spinner */
+@keyframes copa-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ai-loading-spinner {
+  display: inline-flex;
+  animation: copa-spin 0.75s linear infinite;
+}
+
 /* Body */
 body {
   background-color: var(--copa-surface);
@@ -643,6 +653,206 @@ vaadin-combo-box::part(input-field):focus-within {
 
   .stadium-field-img {
     min-width: 140px;
+  }
+}
+
+/* ============================================================
+   HeatWave NL_SQL Admin View
+   ============================================================ */
+
+.nl-sql-view {
+  background: var(--copa-surface);
+  padding: var(--lumo-space-l);
+  gap: var(--lumo-space-l);
+}
+
+.nl-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumo-space-xs);
+  width: 100%;
+}
+
+.nl-header h2 {
+  margin: 0;
+  color: var(--copa-blue);
+  font-weight: 800;
+  font-size: var(--lumo-font-size-2xl);
+}
+
+.nl-header p {
+  margin: 0;
+  color: var(--lumo-secondary-text-color);
+  font-size: var(--lumo-font-size-s);
+}
+
+.nl-workbench {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.34fr) minmax(320px, 1fr);
+  gap: var(--lumo-space-l);
+  align-items: start;
+  width: 100%;
+}
+
+.nl-preset-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lumo-space-xs);
+}
+
+.nl-preset-button {
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border-radius: 6px;
+  border: 1px solid var(--lumo-contrast-10pct);
+  background: var(--lumo-base-color);
+  color: var(--copa-blue);
+  font-weight: 650;
+}
+
+.nl-editor,
+.nl-results {
+  background: var(--lumo-base-color);
+  border: 1px solid var(--lumo-contrast-10pct);
+  border-radius: 8px;
+  padding: var(--lumo-space-m);
+  box-shadow: var(--lumo-box-shadow-s);
+}
+
+.nl-context,
+.nl-actions {
+  flex-wrap: wrap;
+}
+
+.nl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lumo-space-xs);
+  border: 1px solid var(--lumo-contrast-10pct);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  color: var(--lumo-body-text-color);
+  font-size: var(--lumo-font-size-xs);
+}
+
+.nl-pill-label {
+  color: var(--lumo-secondary-text-color);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nl-view-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--lumo-space-s) 0;
+}
+
+.nl-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border-radius: 4px;
+  background: rgba(0, 104, 71, 0.08);
+  color: var(--copa-green);
+  border: 1px solid rgba(0, 104, 71, 0.18);
+  padding: 3px 8px;
+  font-size: var(--lumo-font-size-xs);
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.nl-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumo-space-m);
+  width: 100%;
+}
+
+.nl-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: var(--lumo-space-s);
+}
+
+.nl-metric {
+  border-left: 3px solid var(--copa-green);
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: var(--lumo-space-s);
+  min-width: 0;
+}
+
+.nl-metric span:first-child {
+  display: block;
+  color: var(--lumo-secondary-text-color);
+  font-size: var(--lumo-font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nl-metric span:last-child {
+  display: block;
+  color: var(--lumo-body-text-color);
+  font-size: var(--lumo-font-size-s);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.nl-sql-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lumo-space-m);
+}
+
+.nl-sql-panel {
+  min-width: 0;
+}
+
+.nl-sql-panel h3 {
+  margin: 0 0 var(--lumo-space-xs) 0;
+  color: var(--copa-blue);
+  font-size: var(--lumo-font-size-m);
+  font-weight: 800;
+}
+
+.nl-sql-code {
+  min-height: 96px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 6px;
+  border: 1px solid var(--lumo-contrast-10pct);
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: var(--lumo-space-s);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 960px) {
+  .nl-workbench,
+  .nl-sql-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .nl-meta-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .nl-sql-view {
+    padding: var(--lumo-space-m);
+  }
+
+  .nl-meta-grid {
+    grid-template-columns: 1fr;
   }
 }
 

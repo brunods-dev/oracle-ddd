@@ -27,7 +27,7 @@ locals {
   effective_kubernetes_version      = var.kubernetes_version != "" ? var.kubernetes_version : local.latest_kubernetes_version
   effective_kubernetes_version_no_v = trimprefix(lower(local.effective_kubernetes_version), "v")
 
-  selected_node_shape_processor_description = lower(coalesce(try(data.oci_core_shapes.selected_node_shape.shapes[0].processor_description, null), ""))
+  selected_node_shape_processor_description = lower(coalesce(try(data.oci_core_shapes.selected_node_shape.shapes[0].processor_description, null), "unknown"))
 
   detected_node_pool_os_arch = (
     strcontains(local.selected_node_shape_processor_description, "ampere") ||

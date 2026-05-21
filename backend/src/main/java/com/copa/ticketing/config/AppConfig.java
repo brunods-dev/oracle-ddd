@@ -14,7 +14,10 @@ public record AppConfig(
         String customerPass,
         int defaultPageSize,
         int maxPageSize,
-        int reservationExpiryMinutes
+        int reservationExpiryMinutes,
+        String ociGenAiApiKey,
+        String ociGenAiModelId,
+        String heatwaveNlSqlModelId
 ) {
     public static AppConfig from(Config config) {
         String dbUrl = required("DB_URL", "db.url", config);
@@ -25,6 +28,14 @@ public record AppConfig(
         String customerUser = required("CUSTOMER_USER", "security.customer-user", config);
         String customerPass = required("CUSTOMER_PASS", "security.customer-pass", config);
 
+        String ociGenAiApiKey = envOrConfig("OCI_GENAI_API_KEY", "oci.genai.api-key", config);
+        String ociGenAiModelId = envOrConfig("OCI_GENAI_MODEL_ID", "oci.genai.model-id", config);
+        String heatwaveNlSqlModelId = envOrConfig("HEATWAVE_NL_SQL_MODEL_ID",
+                "heatwave.nl-sql.model-id", config);
+        if (heatwaveNlSqlModelId == null || heatwaveNlSqlModelId.isBlank()) {
+            heatwaveNlSqlModelId = "cohere.command-r-plus-08-2024";
+        }
+
         return new AppConfig(
                 envOrConfigInt("BACKEND_PORT", "server.port", config, 8080),
                 dbUrl, dbUser, dbPass,
@@ -32,7 +43,9 @@ public record AppConfig(
                 adminUser, adminPass, customerUser, customerPass,
                 config.get("pagination.default-size").asInt().orElse(20),
                 config.get("pagination.max-size").asInt().orElse(100),
-                config.get("reservation.expiry-minutes").asInt().orElse(10)
+                config.get("reservation.expiry-minutes").asInt().orElse(10),
+                ociGenAiApiKey, ociGenAiModelId,
+                heatwaveNlSqlModelId
         );
     }
 

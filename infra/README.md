@@ -201,9 +201,12 @@ export ADMIN_USER="admin"
 export ADMIN_PASS="changeme"
 export CUSTOMER_USER="customer"
 export CUSTOMER_PASS="changeme"
+export OCI_GENAI_API_KEY="<ALTERAR_PARA_API_KEY_GENAI>"
+export OCI_GENAI_MODEL_ID="meta.llama-3.3-70b-instruct"
+export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
 export K8S_NAMESPACE="copa-ticketing"
 
-export FRONTEND_PORT="8080"
+export FRONTEND_PORT="8081"
 export BACKEND_URL="http://copa-backend.copa-ticketing.svc.cluster.local:8080"
 export BACKEND_CUSTOMER_USER="customer"
 export BACKEND_CUSTOMER_PASS="changeme"
@@ -230,7 +233,98 @@ export MYSQL_IMPORT_USER="${TF_VAR_mysql_admin_username}"
 export MYSQL_IMPORT_PASSWORD="${TF_VAR_mysql_admin_password}"
 ```
 
+<<<<<<< HEAD
 ## 3. Aplicar Terraform
+=======
+## 3. Configurar OCI Generative AI
+
+A variável `OCI_GENAI_API_KEY` usa uma API key do serviço OCI Generative AI. Ela é diferente da API key IAM criada na seção 1 para o Terraform.
+
+No Console da OCI:
+
+1. Selecione a região do modelo que será usado. O backend atual chama o endpoint `us-chicago-1`, então crie a chave em `US Midwest (Chicago)` ou ajuste o endpoint no código para a região escolhida.
+2. Abra o menu e vá em `Analytics & AI` -> `AI Services` -> `Generative AI`.
+3. No menu de `Generative AI`, entre em `API keys`.
+4. Clique em `Create API key`.
+5. Informe nome, compartment e, se quiser, datas de expiração para `key-one` e `key-two`.
+6. Clique em `Create` e copie o segredo de `key-one` ou `key-two`. Esse segredo, e não o OCID da chave, é o valor do `.env`.
+
+Depois preencha:
+
+```bash
+export OCI_GENAI_API_KEY="<SEGREDO_KEY_ONE_OU_KEY_TWO>"
+```
+
+Também é necessário criar uma policy IAM permitindo o uso da API key pelo Generative AI:
+
+```text
+allow any-user to use generative-ai-family in tenancy where ALL { request.principal.type='generativeaiapikey' }
+```
+
+Para restringir mais, crie uma policy equivalente limitando por compartment, OCID da API key, modelo ou operação. Para a demo, a policy acima libera as chaves de Generative AI no tenancy inteiro.
+
+### Modelos para `OCI_GENAI_MODEL_ID`
+
+`OCI_GENAI_MODEL_ID` é enviado no campo `model` do endpoint `chat/completions` usado pelo backend. Use um modelo disponível na mesma região da `OCI_GENAI_API_KEY`.
+
+Com o endpoint atual em `us-chicago-1`, use um destes modelos de chat suportados pelo fluxo de API key:
+
+```text
+# Meta Llama
+meta.llama-4-maverick-17b-128e-instruct-fp8
+meta.llama-4-scout-17b-16e-instruct
+meta.llama-3.3-70b-instruct
+meta.llama-3.3-70b-instruct-fp8-dynamic
+
+# OpenAI
+openai.gpt-oss-120b
+openai.gpt-oss-20b
+
+# xAI Grok
+xai.grok-4.3
+xai.grok-4.20-0309-reasoning
+xai.grok-4.20-reasoning
+xai.grok-4.20-0309-non-reasoning
+xai.grok-4.20-non-reasoning
+```
+Ref: https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm
+
+Não use modelos de embedding, rerank, voice ou NL_SQL nessa variável. O modelo de NL_SQL continua separado em `HEATWAVE_NL_SQL_MODEL_ID`.
+
+Exemplo recomendado para a demo:
+
+```bash
+export OCI_GENAI_MODEL_ID="meta.llama-3.3-70b-instruct"
+```
+
+## 4. Ajustar variáveis de banco de dados
+
+Você precisa informar uma string de conexão válida em:
+
+```bash
+export DB_URL="<ALTERAR_PARA_STRING_DE_CONEXAO_DO_BD>"
+export DB_USER="<ALTERAR_PARA_USUARIO_DO_BD>"
+export DB_PASS='<ALTERAR_PARA_SENHA_DO_USUARIO_DO_BD>'
+```
+
+Exemplo:
+
+```bash
+export DB_URL="jdbc:mysql://<host>:3306/copa_ticketing?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
+export DB_USER="copa_user"
+export DB_PASS='sua-senha'
+```
+
+Garanta que o banco esteja acessível a partir dos workers do OKE.
+
+Para a tela ADMIN `HeatWave NL_SQL`, o backend também precisa receber o modelo de NL_SQL:
+
+```bash
+export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
+```
+
+## 5. Aplicar Terraform
+>>>>>>> d713771493ff73548086ef66eb753d783c5e52de
 
 Com o `.env` criado:
 
@@ -255,7 +349,11 @@ Os outputs mais importantes para os próximos passos são:
 - dados do cluster OKE.
 - dados do MySQL
 
+<<<<<<< HEAD
 ## 4. Criar Auth Token para OCIR
+=======
+## 6. Criar Auth Token para OCIR
+>>>>>>> d713771493ff73548086ef66eb753d783c5e52de
 
 O `OCIR_AUTH_TOKEN` não é a senha do Console OCI. Ele é um Auth Token do usuário OCI.
 
@@ -277,7 +375,11 @@ export OCIR_AUTH_TOKEN="<AUTH_TOKEN_GERADO>"
 
 O token só é exibido uma vez. Se perder, gere outro.
 
+<<<<<<< HEAD
 ## 5. Preencher OCIR_USERNAME
+=======
+## 7. Preencher OCIR_USERNAME
+>>>>>>> d713771493ff73548086ef66eb753d783c5e52de
 
 É mais fácil preencher `OCIR_USERNAME` depois de rodar o Terraform, porque os repositórios OCIR já existem e você consegue visualizar o namespace no recurso do OCIR ou nos outputs.
 
@@ -319,7 +421,11 @@ Depois de alterar `OCIR_USERNAME` e `OCIR_AUTH_TOKEN`, recarregue o ambiente:
 source .env
 ```
 
+<<<<<<< HEAD
 ## 6. Build e push das imagens
+=======
+## 8. Build e push das imagens
+>>>>>>> d713771493ff73548086ef66eb753d783c5e52de
 
 Execute:
 
@@ -347,6 +453,7 @@ export IMAGE_TAG="demo"
 
 Esse arquivo é gerado automaticamente. Não edite manualmente e não versione no Git.
 
+<<<<<<< HEAD
 ## 7. Configurar OCI Generative AI
 
 A variável `OCI_GENAI_API_KEY` usa uma API key do serviço OCI Generative AI. Ela é diferente da API key IAM criada na seção 1 para o Terraform.
@@ -536,6 +643,8 @@ Por isso, a ordem correta de execução é:
 ./scripts/03_deploy_k8s.sh
 ```
 
+=======
+>>>>>>> d713771493ff73548086ef66eb753d783c5e52de
 ## 9. Deploy no Kubernetes
 
 Execute:
