@@ -5,10 +5,12 @@ import com.copa.ticketing.config.DotEnvLoader;
 import com.copa.ticketing.db.DataSourceProvider;
 import com.copa.ticketing.repository.*;
 import com.copa.ticketing.rest.AdminRoutes;
+import com.copa.ticketing.rest.HeatwaveNlSqlRoutes;
 import com.copa.ticketing.rest.LiveDemoRoutes;
 import com.copa.ticketing.rest.PublicRoutes;
 import com.copa.ticketing.security.BasicAuthConfig;
 import com.copa.ticketing.service.GenAiRecommendationService;
+import com.copa.ticketing.service.HeatwaveNlSqlService;
 import com.copa.ticketing.service.MatchSelloutSimulator;
 import com.copa.ticketing.service.SelloutJobManager;
 import io.helidon.config.Config;
@@ -45,6 +47,7 @@ public class Main {
         var selloutRepo = new SelloutRepository(ds);
         var simulator = new MatchSelloutSimulator(ds);
         var jobManager = new SelloutJobManager(selloutRepo, simulator);
+        var nlSqlService = new HeatwaveNlSqlService(ds, cfg);
 
         var genAiService = (cfg.ociGenAiApiKey() != null)
                 ? new GenAiRecommendationService(cfg, matchRepo)
@@ -61,6 +64,7 @@ public class Main {
         var publicRoutes = new PublicRoutes(matchRepo, customerRepo, reservationRepo, orderRepo, cfg, genAiService);
         var adminRoutes = new AdminRoutes(dashboardRepo, orderRepo, cfg);
         var liveDemoRoutes = new LiveDemoRoutes(hwRepo, jobManager);
+        var heatwaveNlSqlRoutes = new HeatwaveNlSqlRoutes(nlSqlService);
         jobManager.setOnBatchCallback(liveDemoRoutes::invalidateHeatwaveCache);
 
         var server = WebServer.builder()
@@ -70,8 +74,10 @@ public class Main {
                 .routing(HttpRouting.builder()
                         .register("/api/public", publicRoutes)
                         .any("/api/admin/{+}", SecurityFeature.rolesAllowed("ADMIN"))
+                        .any("/api/heatwave/{+}", SecurityFeature.rolesAllowed("ADMIN"))
                         .register("/api/admin", adminRoutes)
                         .register("/api/admin", liveDemoRoutes)
+                        .register("/api/heatwave", heatwaveNlSqlRoutes)
                         .get("/health", (req, res) -> res.send("{\"status\":\"UP\"}"))
                         .options("/{+}", (req, res) -> {
                             res.header("Access-Control-Allow-Origin", "*");

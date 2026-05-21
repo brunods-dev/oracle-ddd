@@ -129,6 +129,16 @@ public class BackendClient {
         return get(url, adminAuth, new TypeReference<>() {});
     }
 
+    public HeatwaveNlSqlResponseDto askHeatwaveNlSql(String question, String questionId) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("question", question);
+        if (questionId != null && !questionId.isBlank()) {
+            body.put("questionId", questionId);
+        }
+        return post(props.url() + "/api/heatwave/nl-sql", adminAuth, body,
+                new TypeReference<>() {}, Duration.ofSeconds(60));
+    }
+
     // ---- Live Demo (Admin) ----
 
     public DashboardStatusDto getLiveDashboard() {
@@ -194,6 +204,10 @@ public class BackendClient {
     }
 
     private <T> T post(String url, String auth, Object body, TypeReference<T> type) {
+        return post(url, auth, body, type, Duration.ofSeconds(10));
+    }
+
+    private <T> T post(String url, String auth, Object body, TypeReference<T> type, Duration timeout) {
         try {
             byte[] payload = MAPPER.writeValueAsBytes(body);
             HttpRequest req = HttpRequest.newBuilder()
@@ -201,7 +215,7 @@ public class BackendClient {
                     .header("Authorization", auth)
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(timeout)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
                     .build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());

@@ -43,6 +43,7 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
             HeatwaveAnalyticsDto.PaymentStatus.class,
             HeatwaveAnalyticsDto.HeatBlock.class,
             HeatwaveAnalyticsDto.LoadStatus.class,
+            HeatwaveNlSqlResponseDto.class,
     };
 
     @Override

@@ -23,3 +23,7 @@ pagination:
 
 reservation:
   expiry-minutes: 10
+
+heatwave:
+  nl-sql:
+    model-id: "cohere.command-r-plus-08-2024"

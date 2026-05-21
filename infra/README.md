@@ -199,6 +199,7 @@ export CUSTOMER_USER="customer"
 export CUSTOMER_PASS="changeme"
 export OCI_GENAI_API_KEY="<ALTERAR_PARA_API_KEY_GENAI>"
 export OCI_GENAI_MODEL_ID="cohere.command-r-plus"
+export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
 export K8S_NAMESPACE="copa-ticketing"
 
 export FRONTEND_PORT="8081"
@@ -228,6 +229,12 @@ export DB_PASS='sua-senha'
 ```
 
 Garanta que o banco esteja acessível a partir dos workers do OKE.
+
+Para a tela ADMIN `HeatWave NL_SQL`, o backend também precisa receber o modelo de NL_SQL:
+
+```bash
+export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
+```
 
 ## 4. Aplicar Terraform
 
