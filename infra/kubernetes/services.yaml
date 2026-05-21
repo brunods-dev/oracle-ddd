@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: copa-backend
+  namespace: copa-ticketing
+  labels:
+    app.kubernetes.io/name: copa-backend
+    app.kubernetes.io/part-of: oracle-ddd-demo
+spec:
+  # NodePort keeps this compatible with OCI Native Ingress on Flannel OKE clusters.
+  type: NodePort
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: copa-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: copa-frontend
+  namespace: copa-ticketing
+  labels:
+    app.kubernetes.io/name: copa-frontend
+    app.kubernetes.io/part-of: oracle-ddd-demo
+spec:
+  # NodePort keeps this compatible with OCI Native Ingress on Flannel OKE clusters.
+  type: NodePort
+  externalTrafficPolicy: Cluster
+  # Vaadin and Spring Security keep UI/auth state in the frontend JVM session.
+  # Keep one browser on the same pod unless Spring Session is introduced.
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  selector:
+    app.kubernetes.io/name: copa-frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

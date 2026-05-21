@@ -51,3 +51,13 @@ Untitled
 
 # Demo share (local credentials / exports)
 copa_ticketing_demo_share/
+
+#Infra
+*.pem
+**/*.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/terraform/.terraform/
+**/terraform/.terraform.lock.hcl
+**/generated/*
+**/!generated/.gitkeep

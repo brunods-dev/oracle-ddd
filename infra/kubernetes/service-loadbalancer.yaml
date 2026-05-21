@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: copa-frontend-lb
+  namespace: copa-ticketing
+  labels:
+    app.kubernetes.io/name: copa-frontend
+    app.kubernetes.io/part-of: oracle-ddd-demo
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: "lb"
+    oci-load-balancer.oraclecloud.com/session-persistence-config: '{"cookieName":"JSESSIONID","disableFallback":false}'
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  # Vaadin and Spring Security keep UI/auth state in the frontend JVM session.
+  # Keep one browser on the same pod unless Spring Session is introduced.
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  selector:
+    app.kubernetes.io/name: copa-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

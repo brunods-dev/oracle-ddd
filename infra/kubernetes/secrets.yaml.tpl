@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: copa-app-secrets
+  namespace: copa-ticketing
+  labels:
+    app.kubernetes.io/part-of: oracle-ddd-demo
+type: Opaque
+stringData:
+  BACKEND_PORT: "${BACKEND_PORT}"
+  DB_URL: "${DB_URL}"
+  DB_USER: "${DB_USER}"
+  DB_PASS: "${DB_PASS}"
+  DB_POOL_SIZE: "${DB_POOL_SIZE}"
+  ADMIN_USER: "${ADMIN_USER}"
+  ADMIN_PASS: "${ADMIN_PASS}"
+  CUSTOMER_USER: "${CUSTOMER_USER}"
+  CUSTOMER_PASS: "${CUSTOMER_PASS}"
+  OCI_GENAI_API_KEY: "${OCI_GENAI_API_KEY}"
+  OCI_GENAI_MODEL_ID: "${OCI_GENAI_MODEL_ID}"
+  FRONTEND_PORT: "${FRONTEND_PORT}"
+  BACKEND_URL: "${BACKEND_URL}"
+  BACKEND_CUSTOMER_USER: "${BACKEND_CUSTOMER_USER}"
+  BACKEND_CUSTOMER_PASS: "${BACKEND_CUSTOMER_PASS}"
+  BACKEND_ADMIN_USER: "${BACKEND_ADMIN_USER}"
+  BACKEND_ADMIN_PASS: "${BACKEND_ADMIN_PASS}"
