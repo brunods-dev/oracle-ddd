@@ -382,4 +382,4 @@ Paleta Copa do Mundo 2026:
 
 
 ## MySQL Tables
-![Copa Ticketing Demo](copa_ticketing_demo.png) 
+![Copa Ticketing Demo](assets/copa_ticketing_demo.png) 
