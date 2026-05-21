@@ -198,7 +198,7 @@ export ADMIN_PASS="changeme"
 export CUSTOMER_USER="customer"
 export CUSTOMER_PASS="changeme"
 export OCI_GENAI_API_KEY="<ALTERAR_PARA_API_KEY_GENAI>"
-export OCI_GENAI_MODEL_ID="cohere.command-r-plus"
+export OCI_GENAI_MODEL_ID="meta.llama-3.3-70b-instruct"
 export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
 export K8S_NAMESPACE="copa-ticketing"
 
@@ -210,7 +210,68 @@ export BACKEND_ADMIN_USER="admin"
 export BACKEND_ADMIN_PASS="changeme"
 ```
 
-## 3. Ajustar variáveis de banco de dados
+## 3. Configurar OCI Generative AI
+
+A variável `OCI_GENAI_API_KEY` usa uma API key do serviço OCI Generative AI. Ela é diferente da API key IAM criada na seção 1 para o Terraform.
+
+No Console da OCI:
+
+1. Selecione a região do modelo que será usado. O backend atual chama o endpoint `us-chicago-1`, então crie a chave em `US Midwest (Chicago)` ou ajuste o endpoint no código para a região escolhida.
+2. Abra o menu e vá em `Analytics & AI` -> `AI Services` -> `Generative AI`.
+3. No menu de `Generative AI`, entre em `API keys`.
+4. Clique em `Create API key`.
+5. Informe nome, compartment e, se quiser, datas de expiração para `key-one` e `key-two`.
+6. Clique em `Create` e copie o segredo de `key-one` ou `key-two`. Esse segredo, e não o OCID da chave, é o valor do `.env`.
+
+Depois preencha:
+
+```bash
+export OCI_GENAI_API_KEY="<SEGREDO_KEY_ONE_OU_KEY_TWO>"
+```
+
+Também é necessário criar uma policy IAM permitindo o uso da API key pelo Generative AI:
+
+```text
+allow any-user to use generative-ai-family in tenancy where ALL { request.principal.type='generativeaiapikey' }
+```
+
+Para restringir mais, crie uma policy equivalente limitando por compartment, OCID da API key, modelo ou operação. Para a demo, a policy acima libera as chaves de Generative AI no tenancy inteiro.
+
+### Modelos para `OCI_GENAI_MODEL_ID`
+
+`OCI_GENAI_MODEL_ID` é enviado no campo `model` do endpoint `chat/completions` usado pelo backend. Use um modelo disponível na mesma região da `OCI_GENAI_API_KEY`.
+
+Com o endpoint atual em `us-chicago-1`, use um destes modelos de chat suportados pelo fluxo de API key:
+
+```text
+# Meta Llama
+meta.llama-4-maverick-17b-128e-instruct-fp8
+meta.llama-4-scout-17b-16e-instruct
+meta.llama-3.3-70b-instruct
+meta.llama-3.3-70b-instruct-fp8-dynamic
+
+# OpenAI
+openai.gpt-oss-120b
+openai.gpt-oss-20b
+
+# xAI Grok
+xai.grok-4.3
+xai.grok-4.20-0309-reasoning
+xai.grok-4.20-reasoning
+xai.grok-4.20-0309-non-reasoning
+xai.grok-4.20-non-reasoning
+```
+Ref: https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm
+
+Não use modelos de embedding, rerank, voice ou NL_SQL nessa variável. O modelo de NL_SQL continua separado em `HEATWAVE_NL_SQL_MODEL_ID`.
+
+Exemplo recomendado para a demo:
+
+```bash
+export OCI_GENAI_MODEL_ID="meta.llama-3.3-70b-instruct"
+```
+
+## 4. Ajustar variáveis de banco de dados
 
 Você precisa informar uma string de conexão válida em:
 
@@ -236,7 +297,7 @@ Para a tela ADMIN `HeatWave NL_SQL`, o backend também precisa receber o modelo 
 export HEATWAVE_NL_SQL_MODEL_ID="cohere.command-r-plus-08-2024"
 ```
 
-## 4. Aplicar Terraform
+## 5. Aplicar Terraform
 
 Com o `.env` criado:
 
@@ -260,7 +321,7 @@ Os outputs mais importantes para os próximos passos são:
 - kubeconfig;
 - dados do cluster OKE.
 
-## 5. Criar Auth Token para OCIR
+## 6. Criar Auth Token para OCIR
 
 O `OCIR_AUTH_TOKEN` não é a senha do Console OCI. Ele é um Auth Token do usuário OCI.
 
@@ -282,7 +343,7 @@ export OCIR_AUTH_TOKEN="<AUTH_TOKEN_GERADO>"
 
 O token só é exibido uma vez. Se perder, gere outro.
 
-## 6. Preencher OCIR_USERNAME
+## 7. Preencher OCIR_USERNAME
 
 É mais fácil preencher `OCIR_USERNAME` depois de rodar o Terraform, porque os repositórios OCIR já existem e você consegue visualizar o namespace no recurso do OCIR ou nos outputs.
 
@@ -324,7 +385,7 @@ Depois de alterar `OCIR_USERNAME` e `OCIR_AUTH_TOKEN`, recarregue o ambiente:
 source .env
 ```
 
-## 7. Build e push das imagens
+## 8. Build e push das imagens
 
 Execute:
 
@@ -352,7 +413,7 @@ export IMAGE_TAG="demo"
 
 Esse arquivo é gerado automaticamente. Não edite manualmente e não versione no Git.
 
-## 8. Deploy no Kubernetes
+## 9. Deploy no Kubernetes
 
 Execute:
 
@@ -372,7 +433,7 @@ Esse script deve:
 8. aguardar os deployments ficarem prontos;
 9. criar ou atualizar o `Service` publico `copa-frontend-lb`.
 
-## 9. Testar a aplicacao
+## 10. Testar a aplicacao
 
 Configure o kubeconfig na pasta infra:
 
@@ -425,7 +486,7 @@ kubectl -n "$K8S_NAMESPACE" run curl-backend \
   -- http://copa-backend:8080/health
 ```
 
-## 10. Destruir o ambiente
+## 11. Destruir o ambiente
 
 Execute:
 
